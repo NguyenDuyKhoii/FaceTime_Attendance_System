@@ -1,0 +1,63 @@
+# General
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*.swp
+*.bak
+*.old
+
+# Visual Studio / Visual Studio Code
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET (back_end_system)
+back_end_system/Hrms.Api/bin/
+back_end_system/Hrms.Api/obj/
+back_end_system/Hrms.Application/bin/
+back_end_system/Hrms.Application/obj/
+back_end_system/Hrms.Domain/bin/
+back_end_system/Hrms.Domain/obj/
+back_end_system/Hrms.Infrastructure/bin/
+back_end_system/Hrms.Infrastructure/obj/
+bin/
+obj/
+publish/
+appsettings.Development.json
+appsettings.Production.json
+
+# Node.js / React Native (front_end_system)
+node_modules/
+front_end_system/node_modules/
+front_end_system/.expo/
+front_end_system/dist/
+front_end_system/web-build/
+front_end_system/expo-env.d.ts
+front_end_system/ios/
+front_end_system/android/
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.tsbuildinfo
+
+# Python (ai_attendance_server)
+ai_attendance_server/.venv/
+ai_attendance_server/__pycache__/
+ai_attendance_server/attendance.db
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+
+# Others
+*.log
+coverage/
+docker-compose.override.yml
