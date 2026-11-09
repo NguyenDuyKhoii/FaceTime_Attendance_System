@@ -9,8 +9,8 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-const char *ssid = "Redmi K60";
-const char *password = "loc12345";
+const char *ssid = "NAU";
+const char *password = "nau12345";
 
 void startCameraServer();
 void setupLedFlash();

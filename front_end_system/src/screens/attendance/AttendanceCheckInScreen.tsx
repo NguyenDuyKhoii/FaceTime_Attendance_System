@@ -1,11 +1,10 @@
 /**
  * AttendanceCheckInScreen - Public screen for employee attendance check-in
- * Displays ESP32 camera stream and triggers face recognition via /send endpoint
+ * Displays ESP32 camera stream and triggers face recognition
  */
 
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-
 import * as FileSystem from "expo-file-system/legacy";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
@@ -13,6 +12,7 @@ import {
     ActivityIndicator,
     Dimensions,
     Platform,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -20,30 +20,21 @@ import {
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import { WebView } from "react-native-webview";
 import CustomAlert from "../../components/CustomAlert";
 import { AuthStackParamList } from "../../types/AuthParam";
 import { API_BASE_URL } from "../../utils/constants";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 type Props = NativeStackScreenProps<AuthStackParamList, "AttendanceCheckIn">;
 
 export default function AttendanceCheckInScreen({ navigation }: Props) {
     const [cameraIP, setCameraIP] = useState<string>("");
-    const [serverIP, setServerIP] = useState<string>("");
     const [streamURL, setStreamURL] = useState<string>("");
     const [discovering, setDiscovering] = useState(true);
     const [capturing, setCapturing] = useState(false);
     const [webViewKey, setWebViewKey] = useState(0);
-    const [debugLogs, setDebugLogs] = useState<string[]>([]);
-
-    const addLog = (msg: string) => {
-        const time = new Date().toLocaleTimeString();
-        setDebugLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 5));
-        console.log(`[DEBUG] ${msg}`);
-    };
 
     const [alert, setAlert] = useState({
         visible: false,
@@ -57,10 +48,9 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
         name: string;
         timestamp: string;
         confidence: number;
+        status?: string;
     } | null>(null);
 
-    // Simple UDP discovery simulation - In production, use actual UDP library
-    // For now, we'll use a hardcoded IP as fallback
     useEffect(() => {
         discoverCamera();
     }, []);
@@ -78,20 +68,17 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                     const data = await response.json();
                     if (data.ok && data.ip && data.ip !== "0.0.0.0") {
                         setCameraIP(data.ip);
-                        setServerIP(host);
                         setStreamURL(`http://${data.ip}:81/stream`);
-                        setWebViewKey(prev => prev + 1); // Force WebView reload
+                        setWebViewKey((prev) => prev + 1);
                         setDiscovering(false);
                         return;
                     }
                 }
             } catch (e) {
-                // Thử host tiếp theo
+                // Tiếp tục thử host kế tiếp
             }
         }
 
-        // Giá trị dự phòng (fallback) khi chưa có ESP32-CAM đăng ký IP
-        setServerIP(apiHost || "localhost");
         setDiscovering(false);
     };
 
@@ -99,40 +86,33 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
         if (!cameraIP) {
             setAlert({
                 visible: true,
-                title: "Camera Not Found",
-                message: "No ESP32-CAM registered yet. Make sure ESP32-CAM is powered on and connected to the same WiFi.",
+                title: "Không tìm thấy Camera",
+                message: "Chưa kết nối được với ESP32-CAM. Vui lòng đảm bảo camera đã bật nguồn và kết nối cùng mạng Wi-Fi.",
                 type: "error",
                 onConfirm: undefined,
             });
             return;
         }
-        const currentCameraIP = cameraIP;
-        const currentServerIP = serverIP || API_BASE_URL;
 
         setCapturing(true);
         const controller = new AbortController();
-
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 seconds timeout
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
 
         try {
-            // Bước 1: Chụp ảnh từ ESP32 camera và tải về bộ nhớ đệm điện thoại
-            // Sửa port mặc định thành port 80 (hoặc port của webserver, nếu vẫn lỗi thử bỏ qua http://)
-            const captureUrl = `http://${currentCameraIP}/capture`;
+            // Bước 1: Chụp ảnh từ camera ESP32 và lưu vào cache của thiết bị
+            const captureUrl = `http://${cameraIP}/capture`;
             const localUri = `${FileSystem.cacheDirectory}capture.jpg`;
 
-            addLog(`Downloading image from camera: ${captureUrl}`);
+            console.log(`[Capture] Downloading image from: ${captureUrl}`);
             const downloadResult = await FileSystem.downloadAsync(captureUrl, localUri);
 
             if (downloadResult.status !== 200) {
-                addLog(`Download error: ${downloadResult.status}`);
-                throw new Error(`Cannot get image from camera (Status: ${downloadResult.status})`);
+                throw new Error("Không thể chụp ảnh từ camera ESP32.");
             }
-            addLog("Image downloaded successfully, preparing data...");
 
-            // Bước 2: Chuẩn bị upload file từ native filesystem
-            // Dùng FileSystem.uploadAsync để tương thích hoàn toàn với React Native 0.88 & Expo 58 (tránh lỗi FormDataPart trên Android)
+            // Bước 2: Upload ảnh tới backend để nhận diện
             const netUrl = `${API_BASE_URL}/Attendance/face-checkin`;
-            addLog(`Sending image to backend: ${netUrl}`);
+            console.log(`[Checkin] Uploading image to backend: ${netUrl}`);
 
             let recognitionData: any = null;
 
@@ -150,10 +130,9 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 });
 
                 clearTimeout(timeoutId);
-                addLog(`Backend responded: ${uploadResult.status}`);
 
                 if (uploadResult.status < 200 || uploadResult.status >= 300) {
-                    throw new Error(`Server error: ${uploadResult.status}`);
+                    throw new Error(`Máy chủ phản hồi mã lỗi: ${uploadResult.status}`);
                 }
 
                 recognitionData = JSON.parse(uploadResult.body);
@@ -176,10 +155,9 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 });
 
                 clearTimeout(timeoutId);
-                addLog(`Backend responded: ${attendanceResponse.status}`);
 
                 if (!attendanceResponse.ok) {
-                    throw new Error(`Server error: ${attendanceResponse.status}`);
+                    throw new Error(`Máy chủ phản hồi mã lỗi: ${attendanceResponse.status}`);
                 }
 
                 recognitionData = await attendanceResponse.json();
@@ -188,95 +166,93 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             if (recognitionData && recognitionData.success) {
                 const { employeeName, confidence, checkInTime, status } = recognitionData;
 
-                // Save last check-in info
                 setLastCheckIn({
-                    name: employeeName || "Unknown",
+                    name: employeeName || "Không xác định",
                     timestamp: checkInTime || new Date().toISOString(),
                     confidence: confidence || 0,
+                    status: status || "CheckedIn",
                 });
 
-                // Format timestamp
-                const formattedTime = new Date(checkInTime).toLocaleString("en-US", {
+                const formattedTime = new Date(checkInTime).toLocaleString("vi-VN", {
                     hour: "2-digit",
                     minute: "2-digit",
-                    hour12: true,
+                    second: "2-digit",
+                    hour12: false,
                 });
 
-                // Differentiate between Check-in and Check-out
                 if (status === "CheckedIn") {
                     setAlert({
                         visible: true,
-                        title: `Hello ${employeeName}! 👋`,
-                        message: `Check-in successful!\n\nTime: ${formattedTime}\nConfidence: ${confidence?.toFixed(1)}%`,
+                        title: `Xin chào ${employeeName}! 👋`,
+                        message: `Điểm danh thành công!\n\nThời gian: ${formattedTime}\nĐộ chính xác: ${confidence?.toFixed(1)}%`,
                         type: "success",
                         onConfirm: undefined,
                     });
                 } else if (status === "CheckedOut") {
                     setAlert({
                         visible: true,
-                        title: `Goodbye ${employeeName}! 👋`,
-                        message: `Check-out successful!\n\nTime: ${formattedTime}\nConfidence: ${confidence?.toFixed(1)}%\n\nSee you next time!`,
+                        title: `Tạm biệt ${employeeName}! 👋`,
+                        message: `Check-out thành công!\n\nThời gian: ${formattedTime}\nĐộ chính xác: ${confidence?.toFixed(1)}%\n\nHẹn gặp lại bạn!`,
                         type: "success",
                         onConfirm: undefined,
                     });
                 } else {
                     setAlert({
                         visible: true,
-                        title: recognitionData.message || "Attendance Processed",
-                        message: `Status: ${status}\nConfidence: ${confidence?.toFixed(1)}%`,
+                        title: recognitionData.message || "Đã xử lý điểm danh",
+                        message: `Trạng thái: ${status}\nĐộ chính xác: ${confidence?.toFixed(1)}%`,
                         type: "info",
                         onConfirm: undefined,
                     });
                 }
             } else if (recognitionData) {
-                // Handle failure cases from .NET
-                const { message, status } = recognitionData;
+                const { status, message } = recognitionData;
 
                 if (status === "UnknownFace") {
                     setAlert({
                         visible: true,
-                        title: "Face Not Recognized",
-                        message: "Your face is not registered or not clear. Please try again.",
+                        title: "Không nhận diện được khuôn mặt",
+                        message: "Khuôn mặt chưa được đăng ký trong hệ thống hoặc hình ảnh không rõ nét. Vui lòng thử lại.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else if (status === "AlreadyCheckedOut") {
                     setAlert({
                         visible: true,
-                        title: "Already Checked-out",
-                        message: "You have already checked out for today.",
+                        title: "Đã hoàn thành ca",
+                        message: "Bạn đã check-out trong ngày hôm nay rồi.",
                         type: "info",
                         onConfirm: undefined,
                     });
                 } else if (status === "NoShiftToday") {
                     setAlert({
                         visible: true,
-                        title: "No Shift Today",
-                        message: "You do not have any shift assigned for today.",
+                        title: "Không có ca làm việc",
+                        message: "Bạn không có ca làm việc được phân công trong ngày hôm nay.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else if (status === "WrongShiftTime") {
                     setAlert({
                         visible: true,
-                        title: "Wrong Time",
-                        message: "It is currently not your working time.",
+                        title: "Chưa đến giờ làm",
+                        message: "Hiện tại chưa đến khung giờ làm việc của bạn.",
                         type: "error",
                         onConfirm: undefined,
                     });
-                } else if (status === "WrongLocation") {
+                } else if (status === "WrongProductionLine") {
                     setAlert({
                         visible: true,
-                        title: "Wrong Location",
-                        message: "You are checking in at the wrong production line.",
+                        title: "Sai vị trí làm việc",
+                        message: "Bạn đang điểm danh tại sai dây chuyền được phân công.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else {
                     setAlert({
                         visible: true,
-                        title: "Processing Failed",
-                        message: "Failed to process attendance data.",
+                        title: "Xử lý thất bại",
+                        message: message || "Không thể xử lý dữ liệu điểm danh. Vui lòng thử lại.",
                         type: "error",
                         onConfirm: undefined,
                     });
@@ -286,18 +262,18 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             clearTimeout(timeoutId);
             console.error("Capture Error Detail:", error);
 
-            let errorMessage = error.message;
-            let errorTitle = "Connection Error";
+            let errorMessage = "Không thể kết nối đến máy chủ hoặc camera.";
+            let errorTitle = "Lỗi kết nối";
 
-            if (error.name === 'AbortError') {
-                errorTitle = "Timeout";
-                errorMessage = "Server did not respond within 25 seconds. Please check your network or server.";
+            if (error.name === "AbortError") {
+                errorTitle = "Hết thời gian phản hồi";
+                errorMessage = "Máy chủ không phản hồi kịp thời (quá 25 giây). Vui lòng thử lại.";
             }
 
             setAlert({
                 visible: true,
                 title: errorTitle,
-                message: `Error: ${errorMessage}\n\nPlease check your Wi-Fi or Server IP: ${currentServerIP}`,
+                message: `${errorMessage}\n\nVui lòng kiểm tra kết nối mạng Wi-Fi và thử lại.`,
                 type: "error",
                 onConfirm: undefined,
             });
@@ -312,150 +288,228 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
     };
 
     return (
-        <LinearGradient colors={["#0F2027", "#203A43", "#2C5364"]} style={styles.container}>
+        <LinearGradient colors={["#0A1128", "#101F42", "#1C2D5A"]} style={styles.container}>
             <SafeAreaView style={styles.safeArea}>
+                {/* Header */}
                 <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color="white" />
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+                        <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
                     </TouchableOpacity>
 
-                    <Text style={styles.title}>Attendance Check-in</Text>
+                    <Text style={styles.headerTitle}>Điểm Danh Khuôn Mặt</Text>
 
-                    <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-                        <Ionicons name="refresh" size={24} color="white" />
+                    <TouchableOpacity onPress={handleRefresh} style={styles.headerButton}>
+                        <Ionicons name="refresh" size={22} color="#FFFFFF" />
                     </TouchableOpacity>
                 </Animated.View>
 
-                <View style={styles.content}>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
                     {discovering ? (
                         <Animated.View entering={FadeInDown.duration(600)} style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#00F2FE" />
-                            <Text style={styles.loadingText}>Discovering camera...</Text>
-                            <Text style={styles.loadingSubtext}>Please wait</Text>
+                            <ActivityIndicator size="large" color="#38BDF8" />
+                            <Text style={styles.loadingText}>Đang dò tìm camera ESP32...</Text>
+                            <Text style={styles.loadingSubtext}>Vui lòng giữ kết nối Wi-Fi ổn định</Text>
                         </Animated.View>
                     ) : (
                         <>
-                            <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.infoBox}>
-                                <View style={styles.infoRow}>
-                                    <Ionicons name="camera" size={20} color="#00F2FE" />
-                                    <Text style={styles.infoLabel}>Camera IP:</Text>
-                                    <Text style={styles.infoValue}>{cameraIP || "Not found"}</Text>
+                            {/* Device Info Card */}
+                            <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.deviceCard}>
+                                <View style={styles.deviceInfoLeft}>
+                                    <View style={styles.deviceIconWrapper}>
+                                        <Ionicons name="videocam" size={18} color="#FFFFFF" />
+                                    </View>
+                                    <View style={styles.deviceTextGroup}>
+                                        <Text style={styles.deviceMainText}>ESP32-CAM Terminal</Text>
+                                        <Text style={styles.deviceSubText}>
+                                            {cameraIP ? `IP: ${cameraIP}` : "Chưa kết nối camera"}
+                                        </Text>
+                                    </View>
                                 </View>
-                                <View style={styles.statusIndicator}>
-                                    <View style={[styles.statusDot, cameraIP && styles.statusDotActive]} />
-                                    <Text style={styles.statusText}>{cameraIP ? "Connected" : "Disconnected"}</Text>
+
+                                <View
+                                    style={[
+                                        styles.statusPill,
+                                        cameraIP ? styles.statusPillActive : styles.statusPillInactive,
+                                    ]}
+                                >
+                                    <View
+                                        style={[
+                                            styles.statusDot,
+                                            cameraIP ? styles.statusDotActive : styles.statusDotInactive,
+                                        ]}
+                                    />
+                                    <Text style={styles.statusPillText}>
+                                        {cameraIP ? "Sẵn sàng" : "Mất kết nối"}
+                                    </Text>
                                 </View>
                             </Animated.View>
 
-                            <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.streamContainer}>
+                            {/* Camera Stream Box with Biometric Scanning Frame */}
+                            <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.streamFrame}>
                                 {streamURL ? (
-                                    <WebView
-                                        key={webViewKey}
-                                        source={{
-                                            html: `
-                                                <html>
-                                                    <head>
-                                                        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                                                        <style>
-                                                            body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; overflow: hidden; }
-                                                            img { width: 100%; height: auto; max-height: 100%; object-fit: contain; }
-                                                        </style>
-                                                    </head>
-                                                    <body>
-                                                        <img src="${streamURL}" style="width: 100%; height: auto;" />
-                                                    </body>
-                                                </html>
-                                            `
-                                        }}
-                                        style={styles.webview}
-                                        scrollEnabled={false}
-                                        originWhitelist={["*"]}
-                                        allowsInlineMediaPlayback={true}
-                                        onError={() => {
-                                            setAlert({
-                                                visible: true,
-                                                title: "Stream Error",
-                                                message: "Failed to load camera stream. Please check camera connection at " + streamURL,
-                                                type: "error",
-                                                onConfirm: undefined,
-                                            });
-                                        }}
-                                    />
+                                    <View style={styles.streamWrapper}>
+                                        <WebView
+                                            key={webViewKey}
+                                            source={{
+                                                html: `
+                                                    <!DOCTYPE html>
+                                                    <html>
+                                                        <head>
+                                                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                                            <style>
+                                                                * { margin: 0; padding: 0; box-sizing: border-box; }
+                                                                body { background: #000; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; overflow: hidden; }
+                                                                img { width: 100%; height: 100%; object-fit: cover; }
+                                                            </style>
+                                                        </head>
+                                                        <body>
+                                                            <img src="${streamURL}" />
+                                                        </body>
+                                                    </html>
+                                                `,
+                                            }}
+                                            style={styles.webview}
+                                            scrollEnabled={false}
+                                            originWhitelist={["*"]}
+                                            allowsInlineMediaPlayback={true}
+                                            onError={() => {
+                                                setAlert({
+                                                    visible: true,
+                                                    title: "Lỗi luồng hình ảnh",
+                                                    message: "Không thể hiển thị luồng video từ camera. Vui lòng kiểm tra nguồn điện camera.",
+                                                    type: "error",
+                                                    onConfirm: undefined,
+                                                });
+                                            }}
+                                        />
+
+                                        {/* Scanner Viewfinder Bracket Corners */}
+                                        <View style={[styles.cornerBracket, styles.bracketTopLeft]} />
+                                        <View style={[styles.cornerBracket, styles.bracketTopRight]} />
+                                        <View style={[styles.cornerBracket, styles.bracketBottomLeft]} />
+                                        <View style={[styles.cornerBracket, styles.bracketBottomRight]} />
+
+                                        {/* Face guide target oval */}
+                                        <View style={styles.faceTargetOval} pointerEvents="none" />
+                                    </View>
                                 ) : (
                                     <View style={styles.noStreamContainer}>
-                                        <Ionicons name="videocam-off" size={60} color="rgba(255,255,255,0.3)" />
-                                        <Text style={styles.noStreamText}>No stream available</Text>
+                                        <Ionicons name="videocam-off-outline" size={56} color="#FFFFFF" />
+                                        <Text style={styles.noStreamTitle}>Không có tín hiệu camera</Text>
+                                        <Text style={styles.noStreamSub}>Vui lòng bật camera ESP32 và tải lại</Text>
                                     </View>
                                 )}
                             </Animated.View>
 
+                            {/* Last Check-in Success Result Card */}
                             {lastCheckIn && (
-                                <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.lastCheckInBox}>
-                                    <View style={styles.lastCheckInHeader}>
-                                        <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
-                                        <Text style={styles.lastCheckInTitle}>Last Check-in</Text>
+                                <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.resultCard}>
+                                    <View style={styles.resultHeader}>
+                                        <View style={styles.resultBadge}>
+                                            <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                                            <Text style={styles.resultBadgeText}>Kết Quả Điểm Danh Gần Nhất</Text>
+                                        </View>
                                     </View>
-                                    <View style={styles.lastCheckInContent}>
-                                        <View style={styles.lastCheckInRow}>
-                                            <Ionicons name="person" size={16} color="#00F2FE" />
-                                            <Text style={styles.lastCheckInLabel}>Name:</Text>
-                                            <Text style={styles.lastCheckInValue}>{lastCheckIn.name}</Text>
+
+                                    <View style={styles.resultBody}>
+                                        {/* Name Row */}
+                                        <View style={styles.resultRowLarge}>
+                                            <Ionicons name="person-circle-outline" size={24} color="#38BDF8" />
+                                            <View style={styles.resultColLarge}>
+                                                <Text style={styles.resultLabelWhite}>Họ và tên</Text>
+                                                <Text style={styles.resultValueName}>{lastCheckIn.name}</Text>
+                                            </View>
                                         </View>
-                                        <View style={styles.lastCheckInRow}>
-                                            <Ionicons name="time" size={16} color="#00F2FE" />
-                                            <Text style={styles.lastCheckInLabel}>Time:</Text>
-                                            <Text style={styles.lastCheckInValue}>
-                                                {new Date(lastCheckIn.timestamp).toLocaleString("en-US", {
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                    second: "2-digit",
-                                                    hour12: true,
-                                                })}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.lastCheckInRow}>
-                                            <Ionicons name="analytics" size={16} color="#00F2FE" />
-                                            <Text style={styles.lastCheckInLabel}>Confidence:</Text>
-                                            <Text style={styles.lastCheckInValue}>{lastCheckIn.confidence.toFixed(1)}%</Text>
+
+                                        {/* Time & Confidence Row */}
+                                        <View style={styles.resultRowSplit}>
+                                            <View style={styles.resultSubCol}>
+                                                <View style={styles.resultSubLabelRow}>
+                                                    <Ionicons name="time-outline" size={15} color="#38BDF8" />
+                                                    <Text style={styles.resultLabelWhite}>Thời gian</Text>
+                                                </View>
+                                                <Text style={styles.resultValueWhite}>
+                                                    {new Date(lastCheckIn.timestamp).toLocaleTimeString("vi-VN", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                        second: "2-digit",
+                                                        hour12: false,
+                                                    })}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.resultDivider} />
+
+                                            <View style={styles.resultSubCol}>
+                                                <View style={styles.resultSubLabelRow}>
+                                                    <Ionicons name="shield-checkmark-outline" size={15} color="#10B981" />
+                                                    <Text style={styles.resultLabelWhite}>Độ khớp</Text>
+                                                </View>
+                                                <Text style={styles.resultValueWhite}>
+                                                    {lastCheckIn.confidence.toFixed(1)}%
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
                                 </Animated.View>
                             )}
 
-                            <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.instructions}>
-                                <Text style={styles.instructionTitle}>System Status:</Text>
-                                {debugLogs.length > 0 ? (
-                                    debugLogs.map((log, i) => (
-                                        <Text key={i} style={[styles.instructionText, { color: i === 0 ? "#00F2FE" : "rgba(255,255,255,0.4)" }]}>
-                                            • {log}
-                                        </Text>
-                                    ))
-                                ) : (
-                                    <Text style={styles.instructionText}>• Waiting for capture...</Text>
-                                )}
+                            {/* Guidelines Card (Replaces technical debug logs) */}
+                            <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.guidelinesCard}>
+                                <View style={styles.guidelinesHeader}>
+                                    <Ionicons name="scan-outline" size={18} color="#38BDF8" />
+                                    <Text style={styles.guidelinesTitle}>Hướng Dẫn Chấm Công</Text>
+                                </View>
+                                <View style={styles.guidelinesList}>
+                                    <View style={styles.guidelineRow}>
+                                        <Ionicons name="checkmark-outline" size={16} color="#38BDF8" style={{ marginTop: 2, marginRight: 8 }} />
+                                        <Text style={styles.guidelineText}>Giữ khuôn mặt thẳng hướng vào giữa khung hình.</Text>
+                                    </View>
+                                    <View style={styles.guidelineRow}>
+                                        <Ionicons name="checkmark-outline" size={16} color="#38BDF8" style={{ marginTop: 2, marginRight: 8 }} />
+                                        <Text style={styles.guidelineText}>Đảm bảo ánh sáng rõ ràng, tránh vị trí ngược sáng.</Text>
+                                    </View>
+                                    <View style={styles.guidelineRow}>
+                                        <Ionicons name="checkmark-outline" size={16} color="#38BDF8" style={{ marginTop: 2, marginRight: 8 }} />
+                                        <Text style={styles.guidelineText}>Tháo khẩu trang hoặc kính râm khi thực hiện chụp.</Text>
+                                    </View>
+                                </View>
                             </Animated.View>
-
-                            <TouchableOpacity
-                                style={[styles.captureButton, capturing && styles.buttonDisabled]}
-                                onPress={handleCapture}
-                                disabled={capturing || !cameraIP}
-                            >
-                                <LinearGradient colors={["#00F2FE", "#4FACFE"]} style={styles.buttonGradient}>
-                                    {capturing ? (
-                                        <View style={styles.buttonContent}>
-                                            <ActivityIndicator color="white" style={{ marginRight: 10 }} />
-                                            <Text style={styles.buttonText}>PROCESSING...</Text>
-                                        </View>
-                                    ) : (
-                                        <View style={styles.buttonContent}>
-                                            <Ionicons name="camera" size={24} color="white" style={{ marginRight: 10 }} />
-                                            <Text style={styles.buttonText}>CAPTURE & CHECK-IN</Text>
-                                        </View>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
                         </>
                     )}
+                </ScrollView>
+
+                {/* Fixed Bottom Action Button */}
+                <View style={styles.bottomBar}>
+                    <TouchableOpacity
+                        style={[styles.captureButton, (capturing || !cameraIP) && styles.buttonDisabled]}
+                        onPress={handleCapture}
+                        disabled={capturing || !cameraIP}
+                        activeOpacity={0.85}
+                    >
+                        <LinearGradient
+                            colors={capturing ? ["#475569", "#334155"] : ["#06B6D4", "#3B82F6"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.buttonGradient}
+                        >
+                            {capturing ? (
+                                <View style={styles.buttonContent}>
+                                    <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 10 }} />
+                                    <Text style={styles.buttonText}>ĐANG XỬ LÝ NHẬN DIỆN...</Text>
+                                </View>
+                            ) : (
+                                <View style={styles.buttonContent}>
+                                    <Ionicons name="camera-outline" size={24} color="#FFFFFF" style={{ marginRight: 10 }} />
+                                    <Text style={styles.buttonText}>CHỤP & ĐIỂM DANH</Text>
+                                </View>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
             </SafeAreaView>
 
@@ -472,159 +526,341 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    safeArea: { flex: 1 },
+    container: {
+        flex: 1,
+    },
+    safeArea: {
+        flex: 1,
+    },
     header: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(255, 255, 255, 0.08)",
     },
-    backButton: { padding: 5 },
-    refreshButton: { padding: 5 },
-    title: { fontSize: 22, fontWeight: "bold", color: "white" },
-    content: { flex: 1, paddingHorizontal: 20 },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
+    headerButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(255, 255, 255, 0.1)",
         alignItems: "center",
+        justifyContent: "center",
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontWeight: "700",
+        color: "#FFFFFF",
+        letterSpacing: 0.3,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 18,
+        paddingTop: 16,
+        paddingBottom: 24,
+    },
+    loadingContainer: {
+        paddingVertical: 80,
+        alignItems: "center",
+        justifyContent: "center",
     },
     loadingText: {
-        color: "#00F2FE",
-        fontSize: 18,
-        fontWeight: "bold",
-        marginTop: 20,
+        color: "#FFFFFF",
+        fontSize: 17,
+        fontWeight: "700",
+        marginTop: 18,
     },
     loadingSubtext: {
-        color: "rgba(255,255,255,0.6)",
-        fontSize: 14,
-        marginTop: 5,
+        color: "#FFFFFF",
+        opacity: 0.75,
+        fontSize: 13,
+        marginTop: 6,
     },
-    infoBox: {
-        backgroundColor: "rgba(255,255,255,0.05)",
-        padding: 15,
-        borderRadius: 15,
-        marginBottom: 15,
-    },
-    infoRow: {
+    deviceCard: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 10,
+        justifyContent: "space-between",
+        backgroundColor: "rgba(255, 255, 255, 0.08)",
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.15)",
+        borderRadius: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginBottom: 16,
     },
-    infoLabel: {
-        color: "rgba(255,255,255,0.7)",
-        fontSize: 14,
-        marginLeft: 8,
-        marginRight: 8,
-    },
-    infoValue: {
-        color: "#00F2FE",
-        fontSize: 14,
-        fontWeight: "bold",
-    },
-    statusIndicator: {
+    deviceInfoLeft: {
         flexDirection: "row",
         alignItems: "center",
+    },
+    deviceIconWrapper: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: "rgba(56, 189, 248, 0.2)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 12,
+    },
+    deviceTextGroup: {
+        justifyContent: "center",
+    },
+    deviceMainText: {
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: "700",
+    },
+    deviceSubText: {
+        color: "#FFFFFF",
+        opacity: 0.8,
+        fontSize: 12,
+        marginTop: 2,
+    },
+    statusPill: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    statusPillActive: {
+        backgroundColor: "rgba(16, 185, 129, 0.2)",
+        borderWidth: 1,
+        borderColor: "rgba(16, 185, 129, 0.5)",
+    },
+    statusPillInactive: {
+        backgroundColor: "rgba(239, 68, 68, 0.2)",
+        borderWidth: 1,
+        borderColor: "rgba(239, 68, 68, 0.5)",
     },
     statusDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: "#FF4D4D",
-        marginRight: 8,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
     },
     statusDotActive: {
-        backgroundColor: "#4CAF50",
+        backgroundColor: "#10B981",
     },
-    statusText: {
-        color: "rgba(255,255,255,0.7)",
+    statusDotInactive: {
+        backgroundColor: "#EF4444",
+    },
+    statusPillText: {
+        color: "#FFFFFF",
         fontSize: 12,
+        fontWeight: "700",
     },
-    streamContainer: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.3)",
-        borderRadius: 15,
+    streamFrame: {
+        width: "100%",
+        aspectRatio: 4 / 3,
+        borderRadius: 20,
         overflow: "hidden",
-        marginBottom: 15,
+        backgroundColor: "#000000",
+        borderWidth: 1.5,
+        borderColor: "rgba(255, 255, 255, 0.2)",
+        marginBottom: 16,
+        elevation: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+    },
+    streamWrapper: {
+        flex: 1,
+        position: "relative",
     },
     webview: {
         flex: 1,
+        backgroundColor: "transparent",
+    },
+    cornerBracket: {
+        position: "absolute",
+        width: 28,
+        height: 28,
+        borderColor: "#38BDF8",
+    },
+    bracketTopLeft: {
+        top: 14,
+        left: 14,
+        borderTopWidth: 3,
+        borderLeftWidth: 3,
+        borderTopLeftRadius: 6,
+    },
+    bracketTopRight: {
+        top: 14,
+        right: 14,
+        borderTopWidth: 3,
+        borderRightWidth: 3,
+        borderTopRightRadius: 6,
+    },
+    bracketBottomLeft: {
+        bottom: 14,
+        left: 14,
+        borderBottomWidth: 3,
+        borderLeftWidth: 3,
+        borderBottomLeftRadius: 6,
+    },
+    bracketBottomRight: {
+        bottom: 14,
+        right: 14,
+        borderBottomWidth: 3,
+        borderRightWidth: 3,
+        borderBottomRightRadius: 6,
+    },
+    faceTargetOval: {
+        position: "absolute",
+        alignSelf: "center",
+        top: "16%",
+        width: "48%",
+        height: "68%",
+        borderRadius: 999,
+        borderWidth: 1.5,
+        borderColor: "rgba(56, 189, 248, 0.4)",
+        borderStyle: "dashed",
     },
     noStreamContainer: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+        padding: 20,
     },
-    noStreamText: {
-        color: "rgba(255,255,255,0.5)",
+    noStreamTitle: {
+        color: "#FFFFFF",
         fontSize: 16,
-        marginTop: 15,
+        fontWeight: "700",
+        marginTop: 14,
     },
-    lastCheckInBox: {
-        backgroundColor: "rgba(76, 175, 80, 0.1)",
-        borderWidth: 1,
-        borderColor: "rgba(76, 175, 80, 0.3)",
-        padding: 15,
-        borderRadius: 15,
-        marginBottom: 15,
+    noStreamSub: {
+        color: "#FFFFFF",
+        opacity: 0.75,
+        fontSize: 13,
+        marginTop: 4,
     },
-    lastCheckInHeader: {
+    resultCard: {
+        backgroundColor: "rgba(16, 185, 129, 0.12)",
+        borderWidth: 1.5,
+        borderColor: "rgba(16, 185, 129, 0.4)",
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 16,
+    },
+    resultHeader: {
         flexDirection: "row",
         alignItems: "center",
         marginBottom: 12,
     },
-    lastCheckInTitle: {
-        color: "#4CAF50",
-        fontSize: 16,
-        fontWeight: "bold",
-        marginLeft: 8,
-    },
-    lastCheckInContent: {
-        gap: 8,
-    },
-    lastCheckInRow: {
+    resultBadge: {
         flexDirection: "row",
         alignItems: "center",
     },
-    lastCheckInLabel: {
-        color: "rgba(255,255,255,0.6)",
-        fontSize: 13,
+    resultBadgeText: {
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: "800",
         marginLeft: 8,
-        marginRight: 8,
-        minWidth: 80,
     },
-    lastCheckInValue: {
-        color: "white",
-        fontSize: 13,
+    resultBody: {
+        gap: 12,
+    },
+    resultRowLarge: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(255, 255, 255, 0.08)",
+        padding: 12,
+        borderRadius: 14,
+    },
+    resultColLarge: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    resultLabelWhite: {
+        color: "#FFFFFF",
+        opacity: 0.8,
+        fontSize: 12,
         fontWeight: "600",
     },
-    instructions: {
-        backgroundColor: "rgba(255,255,255,0.05)",
-        padding: 15,
-        borderRadius: 15,
-        marginBottom: 15,
+    resultValueName: {
+        color: "#FFFFFF",
+        fontSize: 18,
+        fontWeight: "800",
+        marginTop: 2,
     },
-    instructionTitle: {
-        color: "#00F2FE",
-        fontWeight: "bold",
-        fontSize: 14,
-        marginBottom: 8,
+    resultRowSplit: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "rgba(255, 255, 255, 0.08)",
+        padding: 12,
+        borderRadius: 14,
     },
-    instructionText: {
-        color: "rgba(255,255,255,0.6)",
-        fontSize: 12,
-        marginBottom: 3,
+    resultSubCol: {
+        flex: 1,
+    },
+    resultSubLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 4,
+    },
+    resultValueWhite: {
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: "700",
+    },
+    resultDivider: {
+        width: 1,
+        height: 32,
+        backgroundColor: "rgba(255, 255, 255, 0.15)",
+        marginHorizontal: 12,
+    },
+    guidelinesCard: {
+        backgroundColor: "rgba(255, 255, 255, 0.07)",
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.12)",
+        borderRadius: 18,
+        padding: 16,
+    },
+    guidelinesHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 10,
+    },
+    guidelinesTitle: {
+        color: "#FFFFFF",
+        fontSize: 15,
+        fontWeight: "700",
+        marginLeft: 8,
+    },
+    guidelinesList: {
+        gap: 8,
+    },
+    guidelineRow: {
+        flexDirection: "row",
+        alignItems: "flex-start",
+    },
+    guidelineText: {
+        color: "#FFFFFF",
+        fontSize: 13,
+        lineHeight: 18,
+        flex: 1,
+        opacity: 0.9,
+    },
+    bottomBar: {
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        backgroundColor: "rgba(10, 17, 40, 0.95)",
+        borderTopWidth: 1,
+        borderTopColor: "rgba(255, 255, 255, 0.08)",
     },
     captureButton: {
-        height: 60,
-        borderRadius: 15,
+        height: 56,
+        borderRadius: 16,
         overflow: "hidden",
-        marginBottom: 20,
-        elevation: 8,
-        shadowColor: "#4FACFE",
+        elevation: 6,
+        shadowColor: "#06B6D4",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.35,
         shadowRadius: 8,
     },
     buttonGradient: {
@@ -637,12 +873,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     buttonDisabled: {
-        opacity: 0.6,
+        opacity: 0.5,
     },
     buttonText: {
-        color: "white",
+        color: "#FFFFFF",
         fontSize: 16,
-        fontWeight: "bold",
-        letterSpacing: 1,
+        fontWeight: "800",
+        letterSpacing: 0.8,
     },
 });

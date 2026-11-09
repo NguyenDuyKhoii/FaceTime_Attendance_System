@@ -49,6 +49,9 @@ yarn-error.*
 ai_attendance_server/.venv/
 ai_attendance_server/__pycache__/
 ai_attendance_server/attendance.db
+ai_attendance_server/uploads/
+ai_attendance_server/camera_ip.txt
+ai_attendance_server/dataset/
 *.pyc
 *.pyo
 *.pyd
