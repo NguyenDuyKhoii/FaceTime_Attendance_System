@@ -721,7 +721,7 @@ static bool discover_server(uint32_t timeoutMs = 6000) {
         }
 
         udp.stop();
-        log_i("Discovered server: %s:%d", UPLOAD_HOST.c_str(), UPLOAD_PORT);
+        log_i("Discovered server: %s:%d", UPLOAD_HOST.c_str(), PYTHON_BACKEND_PORT);
         return UPLOAD_HOST.length() > 0;
       }
     }
