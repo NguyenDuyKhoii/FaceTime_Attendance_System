@@ -263,10 +263,12 @@ export function HomeScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("DepartmentList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
-                      <Ionicons name="business" size={24} color="#2563EB" />
+                    <View style={styles.bentoHeaderRow}>
+                      <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
+                        <Ionicons name="business" size={20} color="#2563EB" />
+                      </View>
+                      <Text style={styles.bentoTitle} numberOfLines={2}>Departments</Text>
                     </View>
-                    <Text style={styles.bentoTitle}>Departments</Text>
                     <Text style={styles.bentoSubtitle}>Org hierarchy</Text>
                   </TouchableOpacity>
 
@@ -276,10 +278,12 @@ export function HomeScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("ProductionLineList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.bentoIconWrap, { backgroundColor: "#ECFDF5" }]}>
-                      <Ionicons name="git-network" size={24} color="#059669" />
+                    <View style={styles.bentoHeaderRow}>
+                      <View style={[styles.bentoIconWrap, { backgroundColor: "#ECFDF5" }]}>
+                        <Ionicons name="git-network" size={20} color="#059669" />
+                      </View>
+                      <Text style={styles.bentoTitle} numberOfLines={2}>Production Lines</Text>
                     </View>
-                    <Text style={styles.bentoTitle}>Production Lines</Text>
                     <Text style={styles.bentoSubtitle}>Workstations</Text>
                   </TouchableOpacity>
 
@@ -289,10 +293,12 @@ export function HomeScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("ShiftList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.bentoIconWrap, { backgroundColor: "#FFFBEB" }]}>
-                      <Ionicons name="time" size={24} color="#D97706" />
+                    <View style={styles.bentoHeaderRow}>
+                      <View style={[styles.bentoIconWrap, { backgroundColor: "#FFFBEB" }]}>
+                        <Ionicons name="time" size={20} color="#D97706" />
+                      </View>
+                      <Text style={styles.bentoTitle} numberOfLines={2}>Work Shifts</Text>
                     </View>
-                    <Text style={styles.bentoTitle}>Work Shifts</Text>
                     <Text style={styles.bentoSubtitle}>Hours & rules</Text>
                   </TouchableOpacity>
 
@@ -302,10 +308,12 @@ export function HomeScreen({ navigation }: Props) {
                     onPress={() => navigation.navigate("ShiftAssignmentList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.bentoIconWrap, { backgroundColor: "#FAF5FF" }]}>
-                      <Ionicons name="calendar" size={24} color="#7C3AED" />
+                    <View style={styles.bentoHeaderRow}>
+                      <View style={[styles.bentoIconWrap, { backgroundColor: "#FAF5FF" }]}>
+                        <Ionicons name="calendar" size={20} color="#7C3AED" />
+                      </View>
+                      <Text style={styles.bentoTitle} numberOfLines={2}>Shift Assigns</Text>
                     </View>
-                    <Text style={styles.bentoTitle}>Shift Assigns</Text>
                     <Text style={styles.bentoSubtitle}>Daily rosters</Text>
                   </TouchableOpacity>
                 </Animated.View>
@@ -328,10 +336,12 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("AttendanceHistory", {})}
                 activeOpacity={0.8}
               >
-                <View style={[styles.bentoIconWrap, { backgroundColor: "#F0FDFA" }]}>
-                  <Ionicons name="reader-outline" size={24} color="#0D9488" />
+                <View style={styles.bentoHeaderRow}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: "#F0FDFA" }]}>
+                    <Ionicons name="reader-outline" size={20} color="#0D9488" />
+                  </View>
+                  <Text style={styles.bentoTitle} numberOfLines={2}>Attendance Logs</Text>
                 </View>
-                <Text style={styles.bentoTitle}>Attendance Logs</Text>
                 <Text style={styles.bentoSubtitle}>History audit</Text>
               </TouchableOpacity>
 
@@ -341,10 +351,12 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("AttendanceCheckIn" as any)}
                 activeOpacity={0.8}
               >
-                <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
-                  <Ionicons name="camera" size={24} color="#2563EB" />
+                <View style={styles.bentoHeaderRow}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
+                    <Ionicons name="camera" size={20} color="#2563EB" />
+                  </View>
+                  <Text style={[styles.bentoTitle, { color: "#2563EB" }]} numberOfLines={2}>Face Terminal</Text>
                 </View>
-                <Text style={[styles.bentoTitle, { color: "#2563EB" }]}>Face Terminal</Text>
                 <Text style={styles.bentoSubtitle}>AI Camera feed</Text>
               </TouchableOpacity>
 
@@ -354,10 +366,12 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("IoTDeviceList")}
                 activeOpacity={0.8}
               >
-                <View style={[styles.bentoIconWrap, { backgroundColor: "#EEF2FF" }]}>
-                  <Ionicons name="hardware-chip-outline" size={24} color="#4F46E5" />
+                <View style={styles.bentoHeaderRow}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: "#EEF2FF" }]}>
+                    <Ionicons name="hardware-chip-outline" size={20} color="#4F46E5" />
+                  </View>
+                  <Text style={styles.bentoTitle} numberOfLines={2}>IoT Terminals</Text>
                 </View>
-                <Text style={styles.bentoTitle}>IoT Terminals</Text>
                 <Text style={styles.bentoSubtitle}>ESP32 devices</Text>
               </TouchableOpacity>
 
@@ -367,10 +381,12 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("Reports")}
                 activeOpacity={0.8}
               >
-                <View style={[styles.bentoIconWrap, { backgroundColor: "#FFF1F2" }]}>
-                  <Ionicons name="document-text-outline" size={24} color="#E11D48" />
+                <View style={styles.bentoHeaderRow}>
+                  <View style={[styles.bentoIconWrap, { backgroundColor: "#FFF1F2" }]}>
+                    <Ionicons name="document-text-outline" size={20} color="#E11D48" />
+                  </View>
+                  <Text style={styles.bentoTitle} numberOfLines={2}>Export Reports</Text>
                 </View>
-                <Text style={styles.bentoTitle}>Export Reports</Text>
                 <Text style={styles.bentoSubtitle}>Excel & PDF data</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -728,10 +744,10 @@ const styles = StyleSheet.create({
   bentoCard: {
     width: "48%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 13,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     shadowColor: "#64748B",
@@ -744,23 +760,32 @@ const styles = StyleSheet.create({
     borderColor: "#BFDBFE",
     backgroundColor: "#F8FAFC",
   },
+  bentoHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   bentoIconWrap: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 12,
+    marginRight: 9,
+    flexShrink: 0,
   },
   bentoTitle: {
-    fontSize: 15,
+    flex: 1,
+    fontSize: 14.5,
     fontWeight: "700",
     color: "#0F172A",
+    lineHeight: 18,
   },
   bentoSubtitle: {
     fontSize: 12,
     color: "#64748B",
-    marginTop: 3,
+    lineHeight: 16,
+    paddingLeft: 2,
   },
 
   // ─── Helpful Card ───
