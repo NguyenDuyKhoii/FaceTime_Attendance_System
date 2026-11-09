@@ -2,14 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
-  Platform,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -26,12 +25,8 @@ interface SelectedImage {
   uri: string;
   status: "pending" | "uploading" | "success" | "error";
   message?: string;
-
-  // Extra metadata from pickers 
   name?: string;
   mimeType?: string;
-
-  // web drag-drop only
   file?: File;
 }
 
@@ -41,7 +36,6 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<SelectedImage[]>([]);
   const [currentUploadIndex, setCurrentUploadIndex] = useState(-1);
-  const [isDragging, setIsDragging] = useState(false);
 
   const [alert, setAlert] = useState({
     visible: false,
@@ -57,8 +51,8 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
     if (status !== "granted") {
       setAlert({
         visible: true,
-        title: "Permission Denied",
-        message: "We need gallery permissions to select face photos.",
+        title: "Permission Required",
+        message: "Please grant media library access to select portrait photos.",
         type: "error",
         onConfirm: undefined,
       });
@@ -68,14 +62,14 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
-      quality: 0.8,
+      quality: 0.85,
     });
 
     if (!result.canceled) {
       const newImages: SelectedImage[] = result.assets.map((asset, idx) => ({
         uri: asset.uri,
         status: "pending",
-        name: `gallery_${Date.now()}_${idx}.jpg`,
+        name: `face_${Date.now()}_${idx}.jpg`,
         mimeType: "image/jpeg",
       }));
 
@@ -85,7 +79,6 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
       });
     }
   };
-
 
   const pickDocument = async () => {
     try {
@@ -108,41 +101,8 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
         const existed = new Set(prev.map((x) => x.uri));
         return [...prev, ...newImages.filter((x) => !existed.has(x.uri))];
       });
-
-      setAlert({
-        visible: true,
-        title: "Success",
-        message: `Imported ${result.assets.length} images from files.`,
-        type: "success",
-        onConfirm: () => setAlert((prev) => ({ ...prev, visible: false })),
-      });
-    } catch (err) {
-      console.log("Document picker error:", err);
-    }
-  };
-
-  // Web-only drag/drop
-  const handleWebDrop = (e: any) => {
-    if (Platform.OS !== "web") return;
-    e.preventDefault();
-    setIsDragging(false);
-
-    const files = e.dataTransfer?.files;
-    if (files && files.length > 0) {
-      const newImages: SelectedImage[] = Array.from(files)
-        .filter((file: any) => file.type?.startsWith("image/"))
-        .map((file: any) => ({
-          uri: URL.createObjectURL(file),
-          status: "pending",
-          file,
-          name: file.name,
-          mimeType: file.type,
-        }));
-
-      setImages((prev) => {
-        const existed = new Set(prev.map((x) => x.uri));
-        return [...prev, ...newImages.filter((x) => !existed.has(x.uri))];
-      });
+    } catch (e: any) {
+      console.warn("Document picker cancelled or failed", e);
     }
   };
 
@@ -159,8 +119,8 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
     if (images.length === 0) {
       setAlert({
         visible: true,
-        title: "Missing Images",
-        message: "Please select at least one face photo.",
+        title: "No Photos Selected",
+        message: "Please choose at least one face portrait photo to begin training.",
         type: "error",
         onConfirm: undefined,
       });
@@ -169,7 +129,6 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
 
     setLoading(true);
     let successCount = 0;
-
     const updatedImages = [...images];
 
     for (let i = 0; i < updatedImages.length; i++) {
@@ -212,8 +171,8 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
     if (successCount === updatedImages.length) {
       setAlert({
         visible: true,
-        title: "Enrollment Successful",
-        message: `Successfully enrolled ${successCount} face samples for ${employeeName}.`,
+        title: "Enrollment Complete",
+        message: `Successfully trained ${successCount} face samples for ${employeeName}.`,
         type: "success",
         onConfirm: () => navigation.goBack(),
       });
@@ -221,7 +180,7 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
       setAlert({
         visible: true,
         title: "Partial Enrollment",
-        message: `Processed ${successCount}/${updatedImages.length} images. Some failed (face not found), please try again.`,
+        message: `Successfully processed ${successCount}/${updatedImages.length} images. Some photos were rejected (face not found or unclear).`,
         type: "info",
         onConfirm: undefined,
       });
@@ -229,15 +188,23 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
   };
 
   const renderImageItem = ({ item, index }: { item: SelectedImage; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 100)} style={styles.imageCard}>
+    <Animated.View entering={FadeInDown.delay(index * 60)} style={styles.imageCard}>
       <Image source={{ uri: item.uri }} style={styles.thumbnail} />
       <View style={styles.imageOverlay}>
-        {item.status === "uploading" && <ActivityIndicator color="#00F2FE" size="small" />}
-        {item.status === "success" && <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />}
-        {item.status === "error" && <Ionicons name="alert-circle" size={24} color="#FF4D4D" />}
+        {item.status === "uploading" && <ActivityIndicator color="#FFFFFF" size="small" />}
+        {item.status === "success" && (
+          <View style={styles.statusBadgeSuccess}>
+            <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+          </View>
+        )}
+        {item.status === "error" && (
+          <View style={styles.statusBadgeError}>
+            <Ionicons name="alert-circle" size={24} color="#EF4444" />
+          </View>
+        )}
         {item.status === "pending" && !loading && (
-          <TouchableOpacity onPress={() => removeImage(index)} style={styles.removeBtn}>
-            <Ionicons name="close-circle" size={20} color="white" />
+          <TouchableOpacity onPress={() => removeImage(index)} style={styles.removeBtn} activeOpacity={0.7}>
+            <Ionicons name="close-circle" size={22} color="#FFFFFF" />
           </TouchableOpacity>
         )}
       </View>
@@ -245,25 +212,71 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
   );
 
   return (
-    <LinearGradient colors={["#0F2027", "#203A43", "#2C5364"]} style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <SafeAreaView style={styles.safeArea}>
-        <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="white" />
+        {/* Header */}
+        <Animated.View entering={FadeInUp.duration(500)} style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={24} color="#0F172A" />
           </TouchableOpacity>
 
-          <Text style={styles.title}>Face Enrollment</Text>
+          <Text style={styles.headerTitle}>Face Enrollment</Text>
 
-          {/* bỏ refresh MediaLibrary */}
-          <View style={{ width: 28 }} />
+          <View style={{ width: 40 }} />
         </Animated.View>
 
         <View style={styles.content}>
-          <View style={styles.infoBox}>
-            <Text style={styles.targetLabel}>Enrolling face for:</Text>
-            <Text style={styles.targetName}>{employeeName}</Text>
-          </View>
+          {/* Employee Target Info Card */}
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.infoCard}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarInitial}>
+                {employeeName ? employeeName.charAt(0).toUpperCase() : "E"}
+              </Text>
+            </View>
+            <View style={styles.infoDetails}>
+              <Text style={styles.infoSubtitle}>ENROLLING PROFILE</Text>
+              <Text style={styles.infoName} numberOfLines={1}>
+                {employeeName}
+              </Text>
+              <Text style={styles.infoCode}>Employee ID: {employeeId.substring(0, 8)}...</Text>
+            </View>
+          </Animated.View>
 
+          {/* Action Row: Gallery & Files */}
+          <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.actionRow}>
+            <TouchableOpacity
+              style={[styles.actionBtn, loading && styles.disabled]}
+              onPress={pickImages}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: "#EFF6FF" }]}>
+                <Ionicons name="images" size={22} color="#2563EB" />
+              </View>
+              <View style={styles.actionTextWrap}>
+                <Text style={styles.actionMainText}>Photo Gallery</Text>
+                <Text style={styles.actionSubText}>Pick from device</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionBtn, loading && styles.disabled]}
+              onPress={pickDocument}
+              disabled={loading}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.actionIconWrap, { backgroundColor: "#F1F5F9" }]}>
+                <Ionicons name="folder-open" size={22} color="#475569" />
+              </View>
+              <View style={styles.actionTextWrap}>
+                <Text style={styles.actionMainText}>Browse Files</Text>
+                <Text style={styles.actionSubText}>Choose document</Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Photos Grid Container */}
           <View style={styles.listContainer}>
             <FlatList
               data={images}
@@ -273,75 +286,62 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.listContent}
               ListHeaderComponent={
-                <View style={styles.selectionArea}>
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, loading && styles.disabled]}
-                      onPress={pickImages}
-                      disabled={loading}
-                    >
-                      <LinearGradient
-                        colors={["rgba(0, 242, 254, 0.15)", "rgba(0, 242, 254, 0.05)"]}
-                        style={styles.actionGradient}
-                      >
-                        <Ionicons name="images" size={24} color="#00F2FE" />
-                        <Text style={styles.actionText}>Gallery</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.actionBtn, loading && styles.disabled]}
-                      onPress={pickDocument}
-                      disabled={loading}
-                    >
-                      <LinearGradient
-                        colors={["rgba(255, 255, 255, 0.1)", "rgba(255, 255, 255, 0.05)"]}
-                        style={styles.actionGradient}
-                      >
-                        <Ionicons name="folder-open" size={24} color="#00F2FE" />
-                        <Text style={styles.actionText}>Files</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
+                images.length === 0 ? (
+                  <Animated.View entering={FadeInUp.duration(500)} style={styles.emptyContainer}>
+                    <View style={styles.emptyIconCircle}>
+                      <Ionicons name="camera-outline" size={38} color="#94A3B8" />
+                    </View>
+                    <Text style={styles.emptyTitle}>No Portraits Selected</Text>
+                    <Text style={styles.emptySubtitle}>
+                      Select 3 to 5 clear photos of this employee from different slight angles to train the facial model.
+                    </Text>
+                  </Animated.View>
+                ) : (
+                  <View style={styles.photoCountBar}>
+                    <Text style={styles.photoCountText}>
+                      Selected Photos ({images.length})
+                    </Text>
+                    <Text style={styles.photoCountHint}>Tap photo X to remove</Text>
                   </View>
-
-                  {images.length === 0 && (
-                    <Animated.View entering={FadeInUp} style={styles.emptyHint}>
-                      <Ionicons name="camera-outline" size={48} color="rgba(0, 242, 254, 0.2)" />
-                      <Text style={styles.emptyHintText}>No photos selected yet</Text>
-                    </Animated.View>
-                  )}
-                </View>
+                )
               }
             />
           </View>
 
-          <View style={styles.guidelines}>
-            <Text style={styles.guideTitle}>Multi-Sample Enrollment:</Text>
-            <Text style={styles.guideText}>• Select 3-5 photos from different angles.</Text>
-            <Text style={styles.guideText}>• Ensure face is clearly visible in all shots.</Text>
-            <Text style={styles.guideText}>• Supported formats: JPG, PNG.</Text>
+          {/* Multi-Sample Guidelines */}
+          <View style={styles.guidelinesBox}>
+            <View style={styles.guideHeader}>
+              <Ionicons name="shield-checkmark-outline" size={18} color="#2563EB" style={{ marginRight: 7 }} />
+              <Text style={styles.guideTitle}>Enrollment Best Practices</Text>
+            </View>
+            <Text style={styles.guideItem}>• Use clear, front-facing and slight angle shots.</Text>
+            <Text style={styles.guideItem}>• Avoid dark shadows, strong backlights, or blurred focus.</Text>
+            <Text style={styles.guideItem}>• Only one person should appear in each uploaded image.</Text>
           </View>
 
+          {/* Bottom Action Button */}
           <TouchableOpacity
-            style={[styles.enrollButton, (images.length === 0 || loading) && styles.disabled]}
+            style={[
+              styles.enrollButton,
+              (images.length === 0 || loading) && styles.disabled,
+            ]}
             onPress={onEnroll}
             disabled={images.length === 0 || loading}
+            activeOpacity={0.88}
           >
-            <LinearGradient colors={["#00F2FE", "#4FACFE"]} style={styles.buttonGradient}>
-              {loading ? (
-                <View style={styles.loadingRow}>
-                  <ActivityIndicator color="white" style={{ marginRight: 10 }} />
-                  <Text style={styles.enrollText}>
-                    ENROLLING ({currentUploadIndex + 1}/{images.length})
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <Ionicons name="scan-outline" size={24} color="white" style={{ marginRight: 10 }} />
-                  <Text style={styles.enrollText}>START ENROLLMENT</Text>
-                </>
-              )}
-            </LinearGradient>
+            {loading ? (
+              <View style={styles.buttonContent}>
+                <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 10 }} />
+                <Text style={styles.buttonText}>
+                  TRAINING AI MODEL ({currentUploadIndex + 1}/{images.length})...
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.buttonContent}>
+                <Ionicons name="scan-outline" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
+                <Text style={styles.buttonText}>START ENROLLMENT</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -354,104 +354,295 @@ export function EnrollFaceScreen({ route, navigation }: Props) {
         onClose={() => setAlert({ ...alert, visible: false })}
         onConfirm={alert.onConfirm}
       />
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC", // Clean light canvas
+  },
+  safeArea: {
+    flex: 1,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  backButton: { padding: 5 },
-  title: { fontSize: 22, fontWeight: "bold", color: "white" },
-  content: { flex: 1, paddingHorizontal: 20 },
-  infoBox: {
-    marginBottom: 20,
-    backgroundColor: "rgba(0, 242, 254, 0.1)",
-    padding: 18,
-    borderRadius: 15,
+  headerBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+  },
+
+  // ─── Info Card ───
+  infoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(0, 242, 254, 0.2)",
+    borderColor: "#E2E8F0",
+    marginBottom: 16,
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  targetLabel: { color: "rgba(255,255,255,0.5)", fontSize: 13, marginBottom: 4 },
-  targetName: { color: "#00F2FE", fontSize: 20, fontWeight: "bold", letterSpacing: 0.5 },
-  listContainer: { flex: 1 },
-  listContent: { paddingBottom: 20 },
-  selectionArea: { marginBottom: 20 },
-  actionRow: { flexDirection: "row", gap: 12 },
-  actionBtn: { flex: 1, height: 60, borderRadius: 12, overflow: "hidden" },
-  actionGradient: { flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 10 },
-  actionText: { color: "#00F2FE", fontSize: 15, fontWeight: "600" },
-  emptyHint: {
-    height: 180,
+  avatarCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1.5,
+    borderColor: "#DBEAFE",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 20,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
-    borderStyle: "dashed",
+    marginRight: 14,
   },
-  emptyHintText: { color: "rgba(255,255,255,0.3)", marginTop: 12, fontSize: 14 },
-  addBtnDragging: { borderColor: "#00F2FE", backgroundColor: "rgba(0, 242, 254, 0.1)" },
-  addBtnGradient: { flex: 1, justifyContent: "center", alignItems: "center" },
-  addBtnText: { color: "#00F2FE", fontSize: 16, fontWeight: "bold", marginTop: 8 },
-  scanStatus: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 10,
-    marginTop: 5,
+  avatarInitial: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#2563EB",
+  },
+  infoDetails: {
+    flex: 1,
+  },
+  infoSubtitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#2563EB",
+    letterSpacing: 0.6,
+  },
+  infoName: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginTop: 2,
+  },
+  infoCode: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 2,
+  },
+
+  // ─── Action Buttons (Gallery & Files) ───
+  actionRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  actionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  actionTextWrap: {
+    flex: 1,
+  },
+  actionMainText: {
+    fontSize: 14.5,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  actionSubText: {
+    fontSize: 11.5,
+    color: "#64748B",
+    marginTop: 1,
+  },
+
+  // ─── Image List / Empty Area ───
+  listContainer: {
+    flex: 1,
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
+  photoCountBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  photoCountText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  photoCountHint: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+  emptyContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#CBD5E1",
+    borderStyle: "dashed",
+    marginTop: 4,
+  },
+  emptyIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontSize: 16.5,
+    fontWeight: "800",
+    color: "#0F172A",
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: "#64748B",
     textAlign: "center",
-    paddingHorizontal: 12,
+    marginTop: 6,
+    lineHeight: 18,
+    maxWidth: 280,
   },
   imageCard: {
     flex: 1 / 3,
     aspectRatio: 1,
-    margin: 5,
-    borderRadius: 10,
+    margin: 4,
+    borderRadius: 14,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.05)",
-  },
-  thumbnail: { width: "100%", height: "100%" },
-  imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  removeBtn: { position: "absolute", top: 5, right: 5 },
-  guidelines: {
-    backgroundColor: "rgba(255,255,255,0.05)",
-    padding: 15,
-    borderRadius: 15,
-    marginBottom: 20,
-  },
-  guideTitle: { color: "#00F2FE", fontWeight: "bold", marginBottom: 5, fontSize: 14 },
-  guideText: { color: "rgba(255,255,255,0.6)", fontSize: 12, marginBottom: 3 },
-  enrollButton: { height: 60, borderRadius: 15, overflow: "hidden", marginBottom: 20 },
-  buttonGradient: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingRow: { flexDirection: "row", alignItems: "center" },
-  enrollText: { color: "white", fontSize: 16, fontWeight: "bold", letterSpacing: 1 },
-  disabled: { opacity: 0.5 },
-  fileBtn: {
-    backgroundColor: "rgba(255,255,255,0.1)",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
+    backgroundColor: "#E2E8F0",
     borderWidth: 1,
-    borderColor: "rgba(0, 242, 254, 0.3)",
+    borderColor: "#CBD5E1",
   },
-  fileBtnContent: { flexDirection: "row", alignItems: "center" },
-  fileBtnText: { color: "#00F2FE", fontSize: 14, fontWeight: "600" },
+  thumbnail: {
+    width: "100%",
+    height: "100%",
+  },
+  imageOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statusBadgeSuccess: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 2,
+  },
+  statusBadgeError: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    padding: 2,
+  },
+  removeBtn: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 12,
+  },
+
+  // ─── Guidelines ───
+  guidelinesBox: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+  },
+  guideHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  guideTitle: {
+    color: "#1E40AF",
+    fontSize: 14.5,
+    fontWeight: "800",
+  },
+  guideItem: {
+    color: "#1E3A8A",
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+
+  // ─── Enroll Button ───
+  enrollButton: {
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: "#2563EB",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#2563EB",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+  },
+  disabled: {
+    opacity: 0.45,
+  },
 });
