@@ -179,15 +179,23 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.statHeader}>
                   <View style={[styles.statIconBadge, { backgroundColor: "#EFF6FF" }]}>
-                    <Ionicons name="people" size={20} color="#2563EB" />
+                    <Ionicons name="people" size={18} color="#2563EB" />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                  <View style={styles.statPillBadge}>
+                    <Text style={styles.statPillText}>TOTAL</Text>
+                  </View>
                 </View>
-                <Text style={styles.statNumber}>
-                  {statsLoading ? "--" : employeeCount}
-                </Text>
-                <Text style={styles.statLabel}>Employees</Text>
-                <Text style={styles.statFootnote}>Active staff registry</Text>
+                <View style={styles.statMetricRow}>
+                  <Text style={styles.statNumber}>
+                    {statsLoading ? "--" : employeeCount}
+                  </Text>
+                  <Text style={styles.statMetricUnit}>Staff</Text>
+                </View>
+                <Text style={styles.statLabel}>Active Employees</Text>
+                <View style={styles.statFootnoteRow}>
+                  <View style={styles.statActiveDot} />
+                  <Text style={styles.statFootnote}>Verified staff registry</Text>
+                </View>
               </TouchableOpacity>
 
               {/* Attendance Rate Card */}
@@ -198,16 +206,29 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.statHeader}>
                   <View style={[styles.statIconBadge, { backgroundColor: "#ECFDF5" }]}>
-                    <Ionicons name="checkmark-done" size={20} color="#059669" />
+                    <Ionicons name="checkmark-done" size={18} color="#059669" />
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                  <View style={[styles.statPillBadge, { backgroundColor: "#ECFDF5" }]}>
+                    <Text style={[styles.statPillText, { color: "#059669" }]}>TODAY</Text>
+                  </View>
                 </View>
-                <Text style={[styles.statNumber, { color: "#059669" }]}>
-                  {statsLoading ? "--%" : `${attendanceRate.toFixed(0)}%`}
-                </Text>
-                <Text style={styles.statLabel}>Present Today</Text>
+                <View style={styles.statMetricRow}>
+                  <Text style={[styles.statNumber, { color: "#059669" }]}>
+                    {statsLoading ? "--%" : `${attendanceRate.toFixed(0)}%`}
+                  </Text>
+                  <Text style={[styles.statMetricUnit, { color: "#059669" }]}>Present</Text>
+                </View>
+                <Text style={styles.statLabel}>Attendance Rate</Text>
+                <View style={styles.statProgressBarBg}>
+                  <View
+                    style={[
+                      styles.statProgressBarFill,
+                      { width: `${Math.min(Math.max(attendanceRate, 4), 100)}%` },
+                    ]}
+                  />
+                </View>
                 <Text style={styles.statFootnote}>
-                  {presentCount}/{employeeCount} checked in
+                  {presentCount} of {employeeCount} checked in
                 </Text>
               </TouchableOpacity>
             </Animated.View>
@@ -219,14 +240,15 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("Dashboard")}
                 activeOpacity={0.85}
               >
-                <View style={[styles.actionPillIcon, { backgroundColor: "#F3E8FF" }]}>
-                  <Ionicons name="stats-chart" size={22} color="#7C3AED" />
+                <View style={styles.actionHeaderRow}>
+                  <View style={[styles.actionIconWrap, { backgroundColor: "#FAF5FF" }]}>
+                    <Ionicons name="stats-chart" size={18} color="#7C3AED" />
+                  </View>
+                  <Text style={styles.actionPillTitle} numberOfLines={1}>Analytics</Text>
                 </View>
-                <View style={styles.actionPillTextGroup}>
-                  <Text style={styles.actionPillTitle}>Analytics</Text>
-                  <Text style={styles.actionPillSub}>Attendance trends</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                <Text style={styles.actionPillSub} numberOfLines={2}>
+                  Live check-in trends, analytics & department rates
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -234,14 +256,15 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("EmployeeList")}
                 activeOpacity={0.85}
               >
-                <View style={[styles.actionPillIcon, { backgroundColor: "#E0F2FE" }]}>
-                  <Ionicons name="finger-print" size={22} color="#0284C7" />
+                <View style={styles.actionHeaderRow}>
+                  <View style={[styles.actionIconWrap, { backgroundColor: "#F0F9FF" }]}>
+                    <Ionicons name="finger-print" size={18} color="#0284C7" />
+                  </View>
+                  <Text style={styles.actionPillTitle} numberOfLines={1}>Directory</Text>
                 </View>
-                <View style={styles.actionPillTextGroup}>
-                  <Text style={styles.actionPillTitle}>Directory</Text>
-                  <Text style={styles.actionPillSub}>Face enrollment</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                <Text style={styles.actionPillSub} numberOfLines={2}>
+                  Staff profiles, biometric dataset & enrollment
+                </Text>
               </TouchableOpacity>
             </Animated.View>
 
@@ -265,11 +288,13 @@ export function HomeScreen({ navigation }: Props) {
                   >
                     <View style={styles.bentoHeaderRow}>
                       <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
-                        <Ionicons name="business" size={20} color="#2563EB" />
+                        <Ionicons name="business" size={19} color="#2563EB" />
                       </View>
                       <Text style={styles.bentoTitle} numberOfLines={2}>Departments</Text>
                     </View>
-                    <Text style={styles.bentoSubtitle}>Org hierarchy</Text>
+                    <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                      Manage company divisions, team hierarchies, and department staffing.
+                    </Text>
                   </TouchableOpacity>
 
                   {/* Production Lines */}
@@ -280,11 +305,13 @@ export function HomeScreen({ navigation }: Props) {
                   >
                     <View style={styles.bentoHeaderRow}>
                       <View style={[styles.bentoIconWrap, { backgroundColor: "#ECFDF5" }]}>
-                        <Ionicons name="git-network" size={20} color="#059669" />
+                        <Ionicons name="git-network" size={19} color="#059669" />
                       </View>
                       <Text style={styles.bentoTitle} numberOfLines={2}>Production Lines</Text>
                     </View>
-                    <Text style={styles.bentoSubtitle}>Workstations</Text>
+                    <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                      Configure factory lines, assigned workstations, and machine operations.
+                    </Text>
                   </TouchableOpacity>
 
                   {/* Shifts */}
@@ -295,11 +322,13 @@ export function HomeScreen({ navigation }: Props) {
                   >
                     <View style={styles.bentoHeaderRow}>
                       <View style={[styles.bentoIconWrap, { backgroundColor: "#FFFBEB" }]}>
-                        <Ionicons name="time" size={20} color="#D97706" />
+                        <Ionicons name="time" size={19} color="#D97706" />
                       </View>
                       <Text style={styles.bentoTitle} numberOfLines={2}>Work Shifts</Text>
                     </View>
-                    <Text style={styles.bentoSubtitle}>Hours & rules</Text>
+                    <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                      Define working hours, shift rotations, grace periods, and overtime rules.
+                    </Text>
                   </TouchableOpacity>
 
                   {/* Shift Assignments */}
@@ -310,11 +339,13 @@ export function HomeScreen({ navigation }: Props) {
                   >
                     <View style={styles.bentoHeaderRow}>
                       <View style={[styles.bentoIconWrap, { backgroundColor: "#FAF5FF" }]}>
-                        <Ionicons name="calendar" size={20} color="#7C3AED" />
+                        <Ionicons name="calendar" size={19} color="#7C3AED" />
                       </View>
                       <Text style={styles.bentoTitle} numberOfLines={2}>Shift Assigns</Text>
                     </View>
-                    <Text style={styles.bentoSubtitle}>Daily rosters</Text>
+                    <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                      Allocate employees to daily rosters, production lines, and shifts.
+                    </Text>
                   </TouchableOpacity>
                 </Animated.View>
               </>
@@ -338,11 +369,13 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.bentoHeaderRow}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: "#F0FDFA" }]}>
-                    <Ionicons name="reader-outline" size={20} color="#0D9488" />
+                    <Ionicons name="reader-outline" size={19} color="#0D9488" />
                   </View>
                   <Text style={styles.bentoTitle} numberOfLines={2}>Attendance Logs</Text>
                 </View>
-                <Text style={styles.bentoSubtitle}>History audit</Text>
+                <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                  Review full verification history, timestamps, and confidence scores.
+                </Text>
               </TouchableOpacity>
 
               {/* Check-in Shortcut */}
@@ -353,11 +386,13 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.bentoHeaderRow}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
-                    <Ionicons name="camera" size={20} color="#2563EB" />
+                    <Ionicons name="camera" size={19} color="#2563EB" />
                   </View>
                   <Text style={[styles.bentoTitle, { color: "#2563EB" }]} numberOfLines={2}>Face Terminal</Text>
                 </View>
-                <Text style={styles.bentoSubtitle}>AI Camera feed</Text>
+                <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                  Launch AI camera scanner for instant contact-free face attendance.
+                </Text>
               </TouchableOpacity>
 
               {/* IoT Devices */}
@@ -368,11 +403,13 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.bentoHeaderRow}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: "#EEF2FF" }]}>
-                    <Ionicons name="hardware-chip-outline" size={20} color="#4F46E5" />
+                    <Ionicons name="hardware-chip-outline" size={19} color="#4F46E5" />
                   </View>
                   <Text style={styles.bentoTitle} numberOfLines={2}>IoT Terminals</Text>
                 </View>
-                <Text style={styles.bentoSubtitle}>ESP32 devices</Text>
+                <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                  Monitor ESP32-CAM nodes, network health, IP endpoints, and status.
+                </Text>
               </TouchableOpacity>
 
               {/* Reports */}
@@ -383,11 +420,13 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.bentoHeaderRow}>
                   <View style={[styles.bentoIconWrap, { backgroundColor: "#FFF1F2" }]}>
-                    <Ionicons name="document-text-outline" size={20} color="#E11D48" />
+                    <Ionicons name="document-text-outline" size={19} color="#E11D48" />
                   </View>
                   <Text style={styles.bentoTitle} numberOfLines={2}>Export Reports</Text>
                 </View>
-                <Text style={styles.bentoSubtitle}>Excel & PDF data</Text>
+                <Text style={styles.bentoSubtitle} numberOfLines={3}>
+                  Generate attendance sheets, payroll audits, and export to Excel or PDF.
+                </Text>
               </TouchableOpacity>
             </Animated.View>
 
@@ -611,94 +650,147 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#64748B",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  statHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  statIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  statNumber: {
-    fontSize: 27,
-    fontWeight: "800",
-    color: "#0F172A",
-    letterSpacing: -0.5,
-  },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#334155",
-    marginTop: 2,
-  },
-  statFootnote: {
-    fontSize: 12,
-    color: "#94A3B8",
-    marginTop: 2,
-  },
-
-  // ─── Quick Action Pill Row ───
-  quickActionRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 20,
-  },
-  actionPillCard: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#64748B",
+    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 1,
+    minHeight: 136,
   },
-  actionPillIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
+  statHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  statIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 11,
   },
-  actionPillTextGroup: {
+  statPillBadge: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statPillText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#2563EB",
+    letterSpacing: 0.5,
+  },
+  statMetricRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    marginBottom: 2,
+  },
+  statNumber: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.5,
+    marginRight: 5,
+  },
+  statMetricUnit: {
+    fontSize: 12.5,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  statLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  statFootnoteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  statActiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10B981",
+    marginRight: 5,
+  },
+  statProgressBarBg: {
+    height: 4.5,
+    borderRadius: 3,
+    backgroundColor: "#F1F5F9",
+    width: "100%",
+    marginTop: 6,
+    marginBottom: 4,
+    overflow: "hidden",
+  },
+  statProgressBarFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: "#10B981",
+  },
+  statFootnote: {
+    fontSize: 11,
+    color: "#94A3B8",
+    marginTop: 4,
+  },
+
+  // ─── Quick Action Pill Row ───
+  quickActionRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 18,
+  },
+  actionPillCard: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingVertical: 13,
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+    minHeight: 96,
+  },
+  actionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  actionIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+    flexShrink: 0,
   },
   actionPillTitle: {
-    fontSize: 15,
+    flex: 1,
+    fontSize: 14.5,
     fontWeight: "700",
     color: "#0F172A",
   },
   actionPillSub: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#64748B",
-    marginTop: 1,
+    lineHeight: 16,
   },
 
   // ─── Section Header ───
@@ -750,42 +842,45 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#64748B",
+    shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 1,
+    minHeight: 126,
   },
   bentoCardHighlight: {
-    borderColor: "#BFDBFE",
+    borderColor: "#93C5FD",
     backgroundColor: "#F8FAFC",
   },
   bentoHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
+    minHeight: 38,
   },
   bentoIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 9,
     flexShrink: 0,
+    borderWidth: 1,
+    borderColor: "rgba(0, 0, 0, 0.03)",
   },
   bentoTitle: {
     flex: 1,
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: "700",
     color: "#0F172A",
     lineHeight: 18,
   },
   bentoSubtitle: {
-    fontSize: 12,
+    fontSize: 11.5,
     color: "#64748B",
-    lineHeight: 16,
-    paddingLeft: 2,
+    lineHeight: 16.5,
   },
 
   // ─── Helpful Card ───
