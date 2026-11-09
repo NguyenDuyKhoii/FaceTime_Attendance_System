@@ -48,7 +48,7 @@ export function HomeScreen({ navigation }: Props) {
   });
 
   const heroTopPadding =
-    (Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0) + 10;
+    (Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0) + 12;
 
   useEffect(() => {
     loadHeroStats();
@@ -134,7 +134,7 @@ export function HomeScreen({ navigation }: Props) {
                 onPress={() => navigation.navigate("EmployeeList")}
               >
                 <View style={styles.avatarContainer}>
-                  <Ionicons name="person" size={22} color="#2563EB" />
+                  <Ionicons name="person" size={24} color="#2563EB" />
                 </View>
                 <View style={styles.liveIndicator} />
               </TouchableOpacity>
@@ -151,7 +151,7 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.heroLeft}>
                   <View style={styles.heroScannerIcon}>
-                    <Ionicons name="scan" size={26} color="#FFFFFF" />
+                    <Ionicons name="scan" size={28} color="#FFFFFF" />
                   </View>
                   <View style={styles.heroTextWrap}>
                     <View style={styles.heroBadge}>
@@ -159,12 +159,12 @@ export function HomeScreen({ navigation }: Props) {
                     </View>
                     <Text style={styles.heroTitle}>Face Attendance</Text>
                     <Text style={styles.heroSubtitle}>
-                      Chạm để mở camera nhận diện khuôn mặt
+                      Tap to open camera & scan face
                     </Text>
                   </View>
                 </View>
                 <View style={styles.heroArrowBtn}>
-                  <Ionicons name="arrow-forward" size={18} color="#2563EB" />
+                  <Ionicons name="arrow-forward" size={20} color="#2563EB" />
                 </View>
               </TouchableOpacity>
             </Animated.View>
@@ -179,15 +179,15 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.statHeader}>
                   <View style={[styles.statIconBadge, { backgroundColor: "#EFF6FF" }]}>
-                    <Ionicons name="people" size={18} color="#2563EB" />
+                    <Ionicons name="people" size={20} color="#2563EB" />
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
+                  <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
                 </View>
                 <Text style={styles.statNumber}>
                   {statsLoading ? "--" : employeeCount}
                 </Text>
-                <Text style={styles.statLabel}>Nhân viên</Text>
-                <Text style={styles.statFootnote}>Hồ sơ đăng ký</Text>
+                <Text style={styles.statLabel}>Employees</Text>
+                <Text style={styles.statFootnote}>Active staff registry</Text>
               </TouchableOpacity>
 
               {/* Attendance Rate Card */}
@@ -198,16 +198,16 @@ export function HomeScreen({ navigation }: Props) {
               >
                 <View style={styles.statHeader}>
                   <View style={[styles.statIconBadge, { backgroundColor: "#ECFDF5" }]}>
-                    <Ionicons name="checkmark-done" size={18} color="#059669" />
+                    <Ionicons name="checkmark-done" size={20} color="#059669" />
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
+                  <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
                 </View>
                 <Text style={[styles.statNumber, { color: "#059669" }]}>
                   {statsLoading ? "--%" : `${attendanceRate.toFixed(0)}%`}
                 </Text>
-                <Text style={styles.statLabel}>Có mặt hôm nay</Text>
+                <Text style={styles.statLabel}>Present Today</Text>
                 <Text style={styles.statFootnote}>
-                  {presentCount}/{employeeCount} nhân sự
+                  {presentCount}/{employeeCount} checked in
                 </Text>
               </TouchableOpacity>
             </Animated.View>
@@ -220,13 +220,13 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.85}
               >
                 <View style={[styles.actionPillIcon, { backgroundColor: "#F3E8FF" }]}>
-                  <Ionicons name="stats-chart" size={20} color="#7C3AED" />
+                  <Ionicons name="stats-chart" size={22} color="#7C3AED" />
                 </View>
                 <View style={styles.actionPillTextGroup}>
-                  <Text style={styles.actionPillTitle}>Thống Kê</Text>
-                  <Text style={styles.actionPillSub}>Analytics</Text>
+                  <Text style={styles.actionPillTitle}>Analytics</Text>
+                  <Text style={styles.actionPillSub}>Attendance trends</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -235,13 +235,13 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.85}
               >
                 <View style={[styles.actionPillIcon, { backgroundColor: "#E0F2FE" }]}>
-                  <Ionicons name="finger-print" size={20} color="#0284C7" />
+                  <Ionicons name="finger-print" size={22} color="#0284C7" />
                 </View>
                 <View style={styles.actionPillTextGroup}>
-                  <Text style={styles.actionPillTitle}>Nhân Viên</Text>
-                  <Text style={styles.actionPillSub}>Face Enroll</Text>
+                  <Text style={styles.actionPillTitle}>Directory</Text>
+                  <Text style={styles.actionPillSub}>Face enrollment</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
               </TouchableOpacity>
             </Animated.View>
 
@@ -250,9 +250,9 @@ export function HomeScreen({ navigation }: Props) {
               <>
                 <Animated.View entering={FadeInDown.delay(350).duration(600)} style={styles.sectionHeaderRow}>
                   <View style={styles.sectionTag} />
-                  <Text style={styles.sectionHeading}>Quản Lý Nhân Sự & Ca</Text>
+                  <Text style={styles.sectionHeading}>Workforce & Scheduling</Text>
                   <View style={styles.counterBadge}>
-                    <Text style={styles.counterText}>4 mục</Text>
+                    <Text style={styles.counterText}>4 items</Text>
                   </View>
                 </Animated.View>
 
@@ -264,10 +264,10 @@ export function HomeScreen({ navigation }: Props) {
                     activeOpacity={0.8}
                   >
                     <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
-                      <Ionicons name="business" size={22} color="#2563EB" />
+                      <Ionicons name="business" size={24} color="#2563EB" />
                     </View>
-                    <Text style={styles.bentoTitle}>Phòng Ban</Text>
-                    <Text style={styles.bentoSubtitle}>Sơ đồ tổ chức</Text>
+                    <Text style={styles.bentoTitle}>Departments</Text>
+                    <Text style={styles.bentoSubtitle}>Org hierarchy</Text>
                   </TouchableOpacity>
 
                   {/* Production Lines */}
@@ -277,10 +277,10 @@ export function HomeScreen({ navigation }: Props) {
                     activeOpacity={0.8}
                   >
                     <View style={[styles.bentoIconWrap, { backgroundColor: "#ECFDF5" }]}>
-                      <Ionicons name="git-network" size={22} color="#059669" />
+                      <Ionicons name="git-network" size={24} color="#059669" />
                     </View>
-                    <Text style={styles.bentoTitle}>Dây Chuyền</Text>
-                    <Text style={styles.bentoSubtitle}>Khu vực làm việc</Text>
+                    <Text style={styles.bentoTitle}>Production Lines</Text>
+                    <Text style={styles.bentoSubtitle}>Workstations</Text>
                   </TouchableOpacity>
 
                   {/* Shifts */}
@@ -290,10 +290,10 @@ export function HomeScreen({ navigation }: Props) {
                     activeOpacity={0.8}
                   >
                     <View style={[styles.bentoIconWrap, { backgroundColor: "#FFFBEB" }]}>
-                      <Ionicons name="time" size={22} color="#D97706" />
+                      <Ionicons name="time" size={24} color="#D97706" />
                     </View>
-                    <Text style={styles.bentoTitle}>Ca Làm Việc</Text>
-                    <Text style={styles.bentoSubtitle}>Khung giờ chuẩn</Text>
+                    <Text style={styles.bentoTitle}>Work Shifts</Text>
+                    <Text style={styles.bentoSubtitle}>Hours & rules</Text>
                   </TouchableOpacity>
 
                   {/* Shift Assignments */}
@@ -303,10 +303,10 @@ export function HomeScreen({ navigation }: Props) {
                     activeOpacity={0.8}
                   >
                     <View style={[styles.bentoIconWrap, { backgroundColor: "#FAF5FF" }]}>
-                      <Ionicons name="calendar" size={22} color="#7C3AED" />
+                      <Ionicons name="calendar" size={24} color="#7C3AED" />
                     </View>
-                    <Text style={styles.bentoTitle}>Phân Ca</Text>
-                    <Text style={styles.bentoSubtitle}>Lịch trực nhân viên</Text>
+                    <Text style={styles.bentoTitle}>Shift Assigns</Text>
+                    <Text style={styles.bentoSubtitle}>Daily rosters</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </>
@@ -315,9 +315,9 @@ export function HomeScreen({ navigation }: Props) {
             {/* ─── System & Tools Grid ─── */}
             <Animated.View entering={FadeInDown.delay(450).duration(600)} style={styles.sectionHeaderRow}>
               <View style={[styles.sectionTag, { backgroundColor: "#0284C7" }]} />
-              <Text style={styles.sectionHeading}>Hệ Thống & Báo Cáo</Text>
+              <Text style={styles.sectionHeading}>System & Operations</Text>
               <View style={styles.counterBadge}>
-                <Text style={styles.counterText}>4 mục</Text>
+                <Text style={styles.counterText}>4 items</Text>
               </View>
             </Animated.View>
 
@@ -329,10 +329,10 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.8}
               >
                 <View style={[styles.bentoIconWrap, { backgroundColor: "#F0FDFA" }]}>
-                  <Ionicons name="reader-outline" size={22} color="#0D9488" />
+                  <Ionicons name="reader-outline" size={24} color="#0D9488" />
                 </View>
-                <Text style={styles.bentoTitle}>Lịch Sử</Text>
-                <Text style={styles.bentoSubtitle}>Nhật ký check-in</Text>
+                <Text style={styles.bentoTitle}>Attendance Logs</Text>
+                <Text style={styles.bentoSubtitle}>History audit</Text>
               </TouchableOpacity>
 
               {/* Check-in Shortcut */}
@@ -342,10 +342,10 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.8}
               >
                 <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
-                  <Ionicons name="camera" size={22} color="#2563EB" />
+                  <Ionicons name="camera" size={24} color="#2563EB" />
                 </View>
-                <Text style={[styles.bentoTitle, { color: "#2563EB" }]}>Điểm Danh</Text>
-                <Text style={styles.bentoSubtitle}>Camera AI</Text>
+                <Text style={[styles.bentoTitle, { color: "#2563EB" }]}>Face Terminal</Text>
+                <Text style={styles.bentoSubtitle}>AI Camera feed</Text>
               </TouchableOpacity>
 
               {/* IoT Devices */}
@@ -355,10 +355,10 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.8}
               >
                 <View style={[styles.bentoIconWrap, { backgroundColor: "#EEF2FF" }]}>
-                  <Ionicons name="hardware-chip-outline" size={22} color="#4F46E5" />
+                  <Ionicons name="hardware-chip-outline" size={24} color="#4F46E5" />
                 </View>
-                <Text style={styles.bentoTitle}>Thiết Bị</Text>
-                <Text style={styles.bentoSubtitle}>Camera ESP32</Text>
+                <Text style={styles.bentoTitle}>IoT Terminals</Text>
+                <Text style={styles.bentoSubtitle}>ESP32 devices</Text>
               </TouchableOpacity>
 
               {/* Reports */}
@@ -368,10 +368,10 @@ export function HomeScreen({ navigation }: Props) {
                 activeOpacity={0.8}
               >
                 <View style={[styles.bentoIconWrap, { backgroundColor: "#FFF1F2" }]}>
-                  <Ionicons name="document-text-outline" size={22} color="#E11D48" />
+                  <Ionicons name="document-text-outline" size={24} color="#E11D48" />
                 </View>
-                <Text style={styles.bentoTitle}>Báo Cáo</Text>
-                <Text style={styles.bentoSubtitle}>Xuất Excel & PDF</Text>
+                <Text style={styles.bentoTitle}>Export Reports</Text>
+                <Text style={styles.bentoSubtitle}>Excel & PDF data</Text>
               </TouchableOpacity>
             </Animated.View>
 
@@ -379,12 +379,12 @@ export function HomeScreen({ navigation }: Props) {
             <Animated.View entering={FadeInDown.delay(550).duration(600)}>
               <View style={styles.helpfulCard}>
                 <View style={styles.helpfulIconWrap}>
-                  <Ionicons name="bulb-outline" size={20} color="#D97706" />
+                  <Ionicons name="bulb-outline" size={22} color="#D97706" />
                 </View>
                 <View style={styles.helpfulContent}>
-                  <Text style={styles.helpfulTitle}>Mẹo Sử Dụng</Text>
+                  <Text style={styles.helpfulTitle}>Helpful Tip</Text>
                   <Text style={styles.helpfulDesc}>
-                    Chấm công khuôn mặt hoạt động tốt nhất khi camera được đặt ở độ cao 1.4m - 1.6m và đủ ánh sáng trực diện.
+                    Face recognition works best when the ESP32 camera is positioned 1.4m - 1.6m high with balanced front lighting.
                   </Text>
                 </View>
               </View>
@@ -393,15 +393,15 @@ export function HomeScreen({ navigation }: Props) {
             {/* ─── Logout Button ─── */}
             <Animated.View entering={FadeInDown.delay(600).duration(600)}>
               <TouchableOpacity style={styles.logoutButton} onPress={logout} activeOpacity={0.85}>
-                <Ionicons name="log-out-outline" size={18} color="#DC2626" style={{ marginRight: 8 }} />
-                <Text style={styles.logoutText}>Đăng xuất khỏi hệ thống</Text>
+                <Ionicons name="log-out-outline" size={20} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text style={styles.logoutText}>Log Out of System</Text>
               </TouchableOpacity>
             </Animated.View>
 
             {/* Footer */}
             <View style={styles.footerWrap}>
               <Text style={styles.footerBrand}>HRMS Face Attendance • v1.0.0</Text>
-              <Text style={styles.footerSubtitle}>Hệ thống chấm công khuôn mặt ESP32-CAM</Text>
+              <Text style={styles.footerSubtitle}>ESP32-CAM Smart Facial Recognition</Text>
             </View>
           </View>
         </ScrollView>
@@ -413,21 +413,21 @@ export function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC", // Ultra clean, modern off-white slate background
+    backgroundColor: "#F8FAFC",
   },
   safeArea: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 28,
+    paddingBottom: 32,
   },
 
   // ─── Top Header ───
   topHeader: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingBottom: 18,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
   },
@@ -441,23 +441,23 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   greetingLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#64748B",
     fontWeight: "500",
   },
   userNameText: {
-    fontSize: 22,
+    fontSize: 25,
     fontWeight: "800",
     color: "#0F172A",
     marginTop: 2,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   badgeRow: {
     flexDirection: "row",
     alignItems: "center",
     marginTop: 6,
     flexWrap: "wrap",
-    gap: 6,
+    gap: 7,
   },
   roleBadge: {
     flexDirection: "row",
@@ -465,9 +465,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#EFF6FF",
     borderWidth: 1,
     borderColor: "#DBEAFE",
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 7,
   },
   roleDot: {
     width: 6,
@@ -478,12 +478,12 @@ const styles = StyleSheet.create({
   },
   roleText: {
     color: "#2563EB",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
   dateChipText: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#64748B",
     fontWeight: "500",
   },
@@ -491,9 +491,9 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   avatarContainer: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     backgroundColor: "#EFF6FF",
     borderWidth: 1.5,
     borderColor: "#DBEAFE",
@@ -504,9 +504,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -2,
     right: -2,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
     backgroundColor: "#10B981",
     borderWidth: 2,
     borderColor: "#FFFFFF",
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   // ─── Main Content Canvas ───
   content: {
     paddingHorizontal: 18,
-    paddingTop: 16,
+    paddingTop: 18,
   },
 
   // ─── Spotlight Card (Face Attendance Hero) ───
@@ -523,11 +523,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1E40AF", // Confident Solid Royal Blue
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
-    marginBottom: 16,
+    backgroundColor: "#1E40AF",
+    borderRadius: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginBottom: 18,
     shadowColor: "#1E40AF",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.22,
@@ -538,16 +538,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    marginRight: 12,
+    marginRight: 14,
   },
   heroScannerIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     backgroundColor: "rgba(255, 255, 255, 0.18)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
+    marginRight: 15,
   },
   heroTextWrap: {
     flex: 1,
@@ -555,32 +555,32 @@ const styles = StyleSheet.create({
   heroBadge: {
     backgroundColor: "#3B82F6",
     alignSelf: "flex-start",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginBottom: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 5,
+    marginBottom: 5,
   },
   heroBadgeText: {
     color: "#FFFFFF",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 0.8,
   },
   heroTitle: {
     color: "#FFFFFF",
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: "800",
   },
   heroSubtitle: {
     color: "#BFDBFE",
-    fontSize: 12,
-    marginTop: 2,
-    lineHeight: 16,
+    fontSize: 13,
+    marginTop: 3,
+    lineHeight: 18,
   },
   heroArrowBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: "#FFFFFF",
     justifyContent: "center",
     alignItems: "center",
@@ -595,12 +595,12 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
+    borderRadius: 20,
     padding: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
@@ -617,26 +617,26 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   statIconBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 11,
     justifyContent: "center",
     alignItems: "center",
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: "800",
     color: "#0F172A",
     letterSpacing: -0.5,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: "#334155",
     marginTop: 2,
   },
   statFootnote: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#94A3B8",
     marginTop: 2,
   },
@@ -645,16 +645,16 @@ const styles = StyleSheet.create({
   quickActionRow: {
     flexDirection: "row",
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   actionPillCard: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     shadowColor: "#64748B",
@@ -664,23 +664,23 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   actionPillIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
+    marginRight: 11,
   },
   actionPillTextGroup: {
     flex: 1,
   },
   actionPillTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "700",
     color: "#0F172A",
   },
   actionPillSub: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#64748B",
     marginTop: 1,
   },
@@ -690,30 +690,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    marginTop: 4,
+    marginTop: 6,
   },
   sectionTag: {
     width: 4,
-    height: 14,
+    height: 16,
     borderRadius: 2,
     backgroundColor: "#2563EB",
-    marginRight: 8,
+    marginRight: 9,
   },
   sectionHeading: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "800",
     color: "#0F172A",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   counterBadge: {
     marginLeft: 8,
     backgroundColor: "#F1F5F9",
-    paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
     borderRadius: 10,
   },
   counterText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
     color: "#64748B",
   },
@@ -723,15 +723,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 16,
   },
   bentoCard: {
     width: "48%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    marginBottom: 12,
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     shadowColor: "#64748B",
@@ -745,20 +745,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
   bentoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   bentoTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
     color: "#0F172A",
   },
   bentoSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#64748B",
     marginTop: 3,
   },
@@ -767,36 +767,36 @@ const styles = StyleSheet.create({
   helpfulCard: {
     flexDirection: "row",
     backgroundColor: "#FFFBEB",
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
     borderColor: "#FDE68A",
-    marginBottom: 14,
+    marginBottom: 16,
     alignItems: "flex-start",
   },
   helpfulIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 9,
     backgroundColor: "#FEF3C7",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-    marginTop: 2,
+    marginTop: 1,
   },
   helpfulContent: {
     flex: 1,
   },
   helpfulTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: "#92400E",
-    marginBottom: 2,
+    marginBottom: 3,
   },
   helpfulDesc: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#B45309",
-    lineHeight: 17,
+    lineHeight: 18,
   },
 
   // ─── Logout ───
@@ -805,15 +805,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FEE2E2",
-    borderRadius: 14,
-    paddingVertical: 13,
+    borderRadius: 16,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: "#FECACA",
     marginBottom: 20,
   },
   logoutText: {
     color: "#DC2626",
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
   },
 
@@ -823,12 +823,12 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   footerBrand: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: "600",
     color: "#94A3B8",
   },
   footerSubtitle: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: "#CBD5E1",
     marginTop: 2,
   },

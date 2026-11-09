@@ -75,7 +75,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                     }
                 }
             } catch (e) {
-                // Tiếp tục thử host kế tiếp
+                // Try next host
             }
         }
 
@@ -86,8 +86,8 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
         if (!cameraIP) {
             setAlert({
                 visible: true,
-                title: "Không tìm thấy Camera",
-                message: "Chưa kết nối được với ESP32-CAM. Vui lòng đảm bảo camera đã bật nguồn và kết nối cùng mạng Wi-Fi.",
+                title: "Camera Not Found",
+                message: "No ESP32-CAM detected. Please make sure the camera is powered on and connected to the same Wi-Fi network.",
                 type: "error",
                 onConfirm: undefined,
             });
@@ -99,7 +99,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
         const timeoutId = setTimeout(() => controller.abort(), 25000);
 
         try {
-            // Bước 1: Chụp ảnh từ camera ESP32 và lưu vào cache của thiết bị
+            // Step 1: Download captured frame from ESP32 camera to local cache
             const captureUrl = `http://${cameraIP}/capture`;
             const localUri = `${FileSystem.cacheDirectory}capture.jpg`;
 
@@ -107,10 +107,10 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             const downloadResult = await FileSystem.downloadAsync(captureUrl, localUri);
 
             if (downloadResult.status !== 200) {
-                throw new Error("Không thể chụp ảnh từ camera ESP32.");
+                throw new Error("Cannot capture image from ESP32 camera.");
             }
 
-            // Bước 2: Upload ảnh tới backend để nhận diện
+            // Step 2: Upload frame to backend for AI face recognition
             const netUrl = `${API_BASE_URL}/Attendance/face-checkin`;
             console.log(`[Checkin] Uploading image to backend: ${netUrl}`);
 
@@ -132,7 +132,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 clearTimeout(timeoutId);
 
                 if (uploadResult.status < 200 || uploadResult.status >= 300) {
-                    throw new Error(`Máy chủ phản hồi mã lỗi: ${uploadResult.status}`);
+                    throw new Error(`Server returned error code: ${uploadResult.status}`);
                 }
 
                 recognitionData = JSON.parse(uploadResult.body);
@@ -157,7 +157,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 clearTimeout(timeoutId);
 
                 if (!attendanceResponse.ok) {
-                    throw new Error(`Máy chủ phản hồi mã lỗi: ${attendanceResponse.status}`);
+                    throw new Error(`Server returned error code: ${attendanceResponse.status}`);
                 }
 
                 recognitionData = await attendanceResponse.json();
@@ -167,40 +167,40 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 const { employeeName, confidence, checkInTime, status } = recognitionData;
 
                 setLastCheckIn({
-                    name: employeeName || "Không xác định",
+                    name: employeeName || "Unknown Employee",
                     timestamp: checkInTime || new Date().toISOString(),
                     confidence: confidence || 0,
                     status: status || "CheckedIn",
                 });
 
-                const formattedTime = new Date(checkInTime).toLocaleString("vi-VN", {
+                const formattedTime = new Date(checkInTime).toLocaleString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit",
                     second: "2-digit",
-                    hour12: false,
+                    hour12: true,
                 });
 
                 if (status === "CheckedIn") {
                     setAlert({
                         visible: true,
-                        title: `Xin chào ${employeeName}! 👋`,
-                        message: `Điểm danh thành công!\n\nThời gian: ${formattedTime}\nĐộ chính xác: ${confidence?.toFixed(1)}%`,
+                        title: `Welcome, ${employeeName}! 👋`,
+                        message: `Check-in successful!\n\nTime: ${formattedTime}\nAI Confidence: ${confidence?.toFixed(1)}%`,
                         type: "success",
                         onConfirm: undefined,
                     });
                 } else if (status === "CheckedOut") {
                     setAlert({
                         visible: true,
-                        title: `Tạm biệt ${employeeName}! 👋`,
-                        message: `Check-out thành công!\n\nThời gian: ${formattedTime}\nĐộ chính xác: ${confidence?.toFixed(1)}%\n\nHẹn gặp lại bạn!`,
+                        title: `Goodbye, ${employeeName}! 👋`,
+                        message: `Check-out successful!\n\nTime: ${formattedTime}\nAI Confidence: ${confidence?.toFixed(1)}%\n\nHave a great rest of your day!`,
                         type: "success",
                         onConfirm: undefined,
                     });
                 } else {
                     setAlert({
                         visible: true,
-                        title: recognitionData.message || "Đã xử lý điểm danh",
-                        message: `Trạng thái: ${status}\nĐộ chính xác: ${confidence?.toFixed(1)}%`,
+                        title: recognitionData.message || "Attendance Processed",
+                        message: `Status: ${status}\nConfidence: ${confidence?.toFixed(1)}%`,
                         type: "info",
                         onConfirm: undefined,
                     });
@@ -211,48 +211,48 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 if (status === "UnknownFace") {
                     setAlert({
                         visible: true,
-                        title: "Không nhận diện được khuôn mặt",
-                        message: "Khuôn mặt chưa được đăng ký trong hệ thống hoặc hình ảnh không rõ nét. Vui lòng thử lại.",
+                        title: "Face Not Recognized",
+                        message: "Face was not found in the staff registry or the image was blurry. Please try again.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else if (status === "AlreadyCheckedOut") {
                     setAlert({
                         visible: true,
-                        title: "Đã hoàn thành ca",
-                        message: "Bạn đã check-out trong ngày hôm nay rồi.",
+                        title: "Shift Completed",
+                        message: "You have already completed check-out for today.",
                         type: "info",
                         onConfirm: undefined,
                     });
                 } else if (status === "NoShiftToday") {
                     setAlert({
                         visible: true,
-                        title: "Không có ca làm việc",
-                        message: "Bạn không có ca làm việc được phân công trong ngày hôm nay.",
+                        title: "No Shift Assigned",
+                        message: "You do not have any work shift assigned for today.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else if (status === "WrongShiftTime") {
                     setAlert({
                         visible: true,
-                        title: "Chưa đến giờ làm",
-                        message: "Hiện tại chưa đến khung giờ làm việc của bạn.",
+                        title: "Shift Not Started",
+                        message: "It is not yet time for your assigned work shift.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else if (status === "WrongProductionLine") {
                     setAlert({
                         visible: true,
-                        title: "Sai vị trí làm việc",
-                        message: "Bạn đang điểm danh tại sai dây chuyền được phân công.",
+                        title: "Wrong Workstation",
+                        message: "You are checking in at the wrong production line.",
                         type: "error",
                         onConfirm: undefined,
                     });
                 } else {
                     setAlert({
                         visible: true,
-                        title: "Xử lý thất bại",
-                        message: message || "Không thể xử lý dữ liệu điểm danh. Vui lòng thử lại.",
+                        title: "Processing Failed",
+                        message: message || "Could not process attendance data. Please try again.",
                         type: "error",
                         onConfirm: undefined,
                     });
@@ -262,18 +262,18 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             clearTimeout(timeoutId);
             console.error("Capture Error Detail:", error);
 
-            let errorMessage = "Không thể kết nối đến máy chủ hoặc camera.";
-            let errorTitle = "Lỗi kết nối";
+            let errorMessage = "Could not connect to camera or server.";
+            let errorTitle = "Connection Error";
 
             if (error.name === "AbortError") {
-                errorTitle = "Hết thời gian phản hồi";
-                errorMessage = "Máy chủ không phản hồi kịp thời (quá 25 giây). Vui lòng thử lại.";
+                errorTitle = "Request Timeout";
+                errorMessage = "The server did not respond in time (exceeded 25 seconds). Please try again.";
             }
 
             setAlert({
                 visible: true,
                 title: errorTitle,
-                message: `${errorMessage}\n\nVui lòng kiểm tra kết nối mạng Wi-Fi và thử lại.`,
+                message: `${errorMessage}\n\nPlease verify your Wi-Fi network connection.`,
                 type: "error",
                 onConfirm: undefined,
             });
@@ -294,13 +294,13 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 {/* Header */}
                 <Animated.View entering={FadeInUp.duration(500)} style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-                        <Ionicons name="chevron-back" size={24} color="#0F172A" />
+                        <Ionicons name="chevron-back" size={26} color="#0F172A" />
                     </TouchableOpacity>
 
-                    <Text style={styles.headerTitle}>Điểm Danh Khuôn Mặt</Text>
+                    <Text style={styles.headerTitle}>Face Attendance Terminal</Text>
 
                     <TouchableOpacity onPress={handleRefresh} style={styles.headerButton}>
-                        <Ionicons name="refresh" size={20} color="#0F172A" />
+                        <Ionicons name="refresh" size={22} color="#0F172A" />
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -312,8 +312,8 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                     {discovering ? (
                         <Animated.View entering={FadeInDown.duration(600)} style={styles.loadingContainer}>
                             <ActivityIndicator size="large" color="#2563EB" />
-                            <Text style={styles.loadingText}>Đang dò tìm camera ESP32...</Text>
-                            <Text style={styles.loadingSubtext}>Vui lòng giữ kết nối Wi-Fi ổn định</Text>
+                            <Text style={styles.loadingText}>Connecting to ESP32-CAM...</Text>
+                            <Text style={styles.loadingSubtext}>Please keep your Wi-Fi connection stable</Text>
                         </Animated.View>
                     ) : (
                         <>
@@ -321,12 +321,12 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                             <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.deviceCard}>
                                 <View style={styles.deviceInfoLeft}>
                                     <View style={styles.deviceIconWrapper}>
-                                        <Ionicons name="videocam" size={18} color="#2563EB" />
+                                        <Ionicons name="videocam" size={20} color="#2563EB" />
                                     </View>
                                     <View style={styles.deviceTextGroup}>
                                         <Text style={styles.deviceMainText}>ESP32-CAM Terminal</Text>
                                         <Text style={styles.deviceSubText}>
-                                            {cameraIP ? `Thiết bị IP: ${cameraIP}` : "Chưa kết nối camera"}
+                                            {cameraIP ? `Device IP: ${cameraIP}` : "Camera searching..."}
                                         </Text>
                                     </View>
                                 </View>
@@ -349,7 +349,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             cameraIP ? styles.statusPillTextActive : styles.statusPillTextInactive,
                                         ]}
                                     >
-                                        {cameraIP ? "Sẵn sàng" : "Mất kết nối"}
+                                        {cameraIP ? "Ready" : "Offline"}
                                     </Text>
                                 </View>
                             </Animated.View>
@@ -385,8 +385,8 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             onError={() => {
                                                 setAlert({
                                                     visible: true,
-                                                    title: "Lỗi luồng hình ảnh",
-                                                    message: "Không thể hiển thị luồng video từ camera. Vui lòng kiểm tra nguồn điện camera.",
+                                                    title: "Stream Connection Error",
+                                                    message: "Failed to display live video stream. Please check camera power and network.",
                                                     type: "error",
                                                     onConfirm: undefined,
                                                 });
@@ -404,9 +404,9 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                     </View>
                                 ) : (
                                     <View style={styles.noStreamContainer}>
-                                        <Ionicons name="videocam-off-outline" size={52} color="#94A3B8" />
-                                        <Text style={styles.noStreamTitle}>Không có tín hiệu camera</Text>
-                                        <Text style={styles.noStreamSub}>Vui lòng kiểm tra kết nối thiết bị ESP32</Text>
+                                        <Ionicons name="videocam-off-outline" size={56} color="#94A3B8" />
+                                        <Text style={styles.noStreamTitle}>No Camera Signal</Text>
+                                        <Text style={styles.noStreamSub}>Please check ESP32 power and Wi-Fi connection</Text>
                                     </View>
                                 )}
                             </Animated.View>
@@ -416,8 +416,8 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                 <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.resultCard}>
                                     <View style={styles.resultHeader}>
                                         <View style={styles.resultBadge}>
-                                            <Ionicons name="checkmark-circle" size={20} color="#059669" />
-                                            <Text style={styles.resultBadgeText}>Kết Quả Điểm Danh Gần Nhất</Text>
+                                            <Ionicons name="checkmark-circle" size={22} color="#059669" />
+                                            <Text style={styles.resultBadgeText}>Latest Check-in Result</Text>
                                         </View>
                                     </View>
 
@@ -425,10 +425,10 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                         {/* Name Row */}
                                         <View style={styles.resultRowLarge}>
                                             <View style={styles.resultIconWrap}>
-                                                <Ionicons name="person" size={20} color="#2563EB" />
+                                                <Ionicons name="person" size={22} color="#2563EB" />
                                             </View>
                                             <View style={styles.resultColLarge}>
-                                                <Text style={styles.resultLabel}>Họ và tên nhân viên</Text>
+                                                <Text style={styles.resultLabel}>Employee Name</Text>
                                                 <Text style={styles.resultValueName}>{lastCheckIn.name}</Text>
                                             </View>
                                         </View>
@@ -436,13 +436,13 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                         {/* Time & Confidence Row */}
                                         <View style={styles.resultRowSplit}>
                                             <View style={styles.resultSubCol}>
-                                                <Text style={styles.resultLabel}>Thời gian</Text>
+                                                <Text style={styles.resultLabel}>Timestamp</Text>
                                                 <Text style={styles.resultValueTime}>
-                                                    {new Date(lastCheckIn.timestamp).toLocaleTimeString("vi-VN", {
+                                                    {new Date(lastCheckIn.timestamp).toLocaleTimeString("en-US", {
                                                         hour: "2-digit",
                                                         minute: "2-digit",
                                                         second: "2-digit",
-                                                        hour12: false,
+                                                        hour12: true,
                                                     })}
                                                 </Text>
                                             </View>
@@ -450,7 +450,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             <View style={styles.resultDivider} />
 
                                             <View style={styles.resultSubCol}>
-                                                <Text style={styles.resultLabel}>Độ chính xác AI</Text>
+                                                <Text style={styles.resultLabel}>AI Confidence</Text>
                                                 <Text style={styles.resultValueConfidence}>
                                                     {lastCheckIn.confidence.toFixed(1)}%
                                                 </Text>
@@ -464,22 +464,22 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                             <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.guidelinesCard}>
                                 <View style={styles.guidelinesHeader}>
                                     <View style={styles.guidelinesIconWrap}>
-                                        <Ionicons name="scan-outline" size={18} color="#2563EB" />
+                                        <Ionicons name="scan-outline" size={20} color="#2563EB" />
                                     </View>
-                                    <Text style={styles.guidelinesTitle}>Hướng Dẫn Chấm Công</Text>
+                                    <Text style={styles.guidelinesTitle}>Check-in Guidelines</Text>
                                 </View>
                                 <View style={styles.guidelinesList}>
                                     <View style={styles.guidelineRow}>
-                                        <Ionicons name="checkmark-circle" size={16} color="#2563EB" style={{ marginTop: 2, marginRight: 8 }} />
-                                        <Text style={styles.guidelineText}>Giữ khuôn mặt thẳng hướng vào khung hình tròn.</Text>
+                                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" style={{ marginTop: 2, marginRight: 9 }} />
+                                        <Text style={styles.guidelineText}>Align your face directly inside the circular guide.</Text>
                                     </View>
                                     <View style={styles.guidelineRow}>
-                                        <Ionicons name="checkmark-circle" size={16} color="#2563EB" style={{ marginTop: 2, marginRight: 8 }} />
-                                        <Text style={styles.guidelineText}>Đảm bảo ánh sáng trực diện, tránh đứng ngược sáng.</Text>
+                                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" style={{ marginTop: 2, marginRight: 9 }} />
+                                        <Text style={styles.guidelineText}>Ensure balanced front lighting and avoid strong backlights.</Text>
                                     </View>
                                     <View style={styles.guidelineRow}>
-                                        <Ionicons name="checkmark-circle" size={16} color="#2563EB" style={{ marginTop: 2, marginRight: 8 }} />
-                                        <Text style={styles.guidelineText}>Tháo khẩu trang hoặc kính râm khi thực hiện quét.</Text>
+                                        <Ionicons name="checkmark-circle" size={18} color="#2563EB" style={{ marginTop: 2, marginRight: 9 }} />
+                                        <Text style={styles.guidelineText}>Remove masks, hats, or dark sunglasses before scanning.</Text>
                                     </View>
                                 </View>
                             </Animated.View>
@@ -502,12 +502,12 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                         {capturing ? (
                             <View style={styles.buttonContent}>
                                 <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 10 }} />
-                                <Text style={styles.buttonText}>ĐANG NHẬN DIỆN KHUÔN MẶT...</Text>
+                                <Text style={styles.buttonText}>PROCESSING FACE RECOGNITION...</Text>
                             </View>
                         ) : (
                             <View style={styles.buttonContent}>
-                                <Ionicons name="camera" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
-                                <Text style={styles.buttonText}>CHỤP & ĐIỂM DANH</Text>
+                                <Ionicons name="camera" size={24} color="#FFFFFF" style={{ marginRight: 10 }} />
+                                <Text style={styles.buttonText}>CAPTURE & CHECK-IN</Text>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -529,7 +529,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F8FAFC", // Clean light slate
+        backgroundColor: "#F8FAFC",
     },
     safeArea: {
         flex: 1,
@@ -539,31 +539,32 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 20,
-        paddingVertical: 14,
+        paddingVertical: 16,
         backgroundColor: "#FFFFFF",
         borderBottomWidth: 1,
         borderBottomColor: "#F1F5F9",
     },
     headerButton: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
+        width: 42,
+        height: 42,
+        borderRadius: 13,
         backgroundColor: "#F1F5F9",
         alignItems: "center",
         justifyContent: "center",
     },
     headerTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: "800",
         color: "#0F172A",
+        letterSpacing: -0.3,
     },
     scrollView: {
         flex: 1,
     },
     scrollContent: {
         paddingHorizontal: 18,
-        paddingTop: 16,
-        paddingBottom: 24,
+        paddingTop: 18,
+        paddingBottom: 28,
     },
     loadingContainer: {
         paddingVertical: 80,
@@ -572,14 +573,14 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         color: "#0F172A",
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: "700",
-        marginTop: 16,
+        marginTop: 18,
     },
     loadingSubtext: {
         color: "#64748B",
-        fontSize: 13,
-        marginTop: 4,
+        fontSize: 14,
+        marginTop: 5,
     },
     deviceCard: {
         flexDirection: "row",
@@ -588,10 +589,10 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#E2E8F0",
-        borderRadius: 16,
-        paddingVertical: 12,
+        borderRadius: 18,
+        paddingVertical: 14,
         paddingHorizontal: 16,
-        marginBottom: 14,
+        marginBottom: 16,
         shadowColor: "#64748B",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
@@ -603,9 +604,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     deviceIconWrapper: {
-        width: 36,
-        height: 36,
-        borderRadius: 10,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         backgroundColor: "#EFF6FF",
         alignItems: "center",
         justifyContent: "center",
@@ -616,19 +617,19 @@ const styles = StyleSheet.create({
     },
     deviceMainText: {
         color: "#0F172A",
-        fontSize: 14,
+        fontSize: 15.5,
         fontWeight: "700",
     },
     deviceSubText: {
         color: "#64748B",
-        fontSize: 12,
+        fontSize: 13,
         marginTop: 2,
     },
     statusPill: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 20,
     },
     statusPillActive: {
@@ -642,9 +643,9 @@ const styles = StyleSheet.create({
         borderColor: "#FECACA",
     },
     statusDot: {
-        width: 7,
-        height: 7,
-        borderRadius: 3.5,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         marginRight: 6,
     },
     statusDotActive: {
@@ -654,7 +655,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#DC2626",
     },
     statusPillText: {
-        fontSize: 11,
+        fontSize: 12.5,
         fontWeight: "700",
     },
     statusPillTextActive: {
@@ -666,12 +667,12 @@ const styles = StyleSheet.create({
     streamFrame: {
         width: "100%",
         aspectRatio: 4 / 3,
-        borderRadius: 20,
+        borderRadius: 22,
         overflow: "hidden",
         backgroundColor: "#0F172A",
         borderWidth: 1.5,
         borderColor: "#E2E8F0",
-        marginBottom: 16,
+        marginBottom: 18,
         shadowColor: "#0F172A",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.12,
@@ -688,8 +689,8 @@ const styles = StyleSheet.create({
     },
     cornerBracket: {
         position: "absolute",
-        width: 26,
-        height: 26,
+        width: 28,
+        height: 28,
         borderColor: "#38BDF8",
     },
     bracketTopLeft: {
@@ -740,22 +741,22 @@ const styles = StyleSheet.create({
     },
     noStreamTitle: {
         color: "#0F172A",
-        fontSize: 15,
+        fontSize: 16.5,
         fontWeight: "700",
         marginTop: 12,
     },
     noStreamSub: {
         color: "#64748B",
-        fontSize: 12,
+        fontSize: 13,
         marginTop: 4,
     },
     resultCard: {
         backgroundColor: "#F0FDF4",
         borderWidth: 1,
         borderColor: "#BBF7D0",
-        borderRadius: 18,
-        padding: 16,
-        marginBottom: 16,
+        borderRadius: 20,
+        padding: 18,
+        marginBottom: 18,
         shadowColor: "#059669",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.06,
@@ -765,7 +766,7 @@ const styles = StyleSheet.create({
     resultHeader: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 12,
+        marginBottom: 14,
     },
     resultBadge: {
         flexDirection: "row",
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
     },
     resultBadgeText: {
         color: "#166534",
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: "800",
         marginLeft: 8,
     },
@@ -784,31 +785,31 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#FFFFFF",
-        padding: 12,
-        borderRadius: 14,
+        padding: 14,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: "#DCFCE7",
     },
     resultIconWrap: {
-        width: 38,
-        height: 38,
-        borderRadius: 10,
+        width: 42,
+        height: 42,
+        borderRadius: 12,
         backgroundColor: "#EFF6FF",
         justifyContent: "center",
         alignItems: "center",
     },
     resultColLarge: {
-        marginLeft: 12,
+        marginLeft: 14,
         flex: 1,
     },
     resultLabel: {
         color: "#64748B",
-        fontSize: 11,
+        fontSize: 12.5,
         fontWeight: "600",
     },
     resultValueName: {
         color: "#0F172A",
-        fontSize: 17,
+        fontSize: 19,
         fontWeight: "800",
         marginTop: 2,
     },
@@ -816,8 +817,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#FFFFFF",
-        padding: 12,
-        borderRadius: 14,
+        padding: 14,
+        borderRadius: 16,
         borderWidth: 1,
         borderColor: "#DCFCE7",
     },
@@ -826,28 +827,28 @@ const styles = StyleSheet.create({
     },
     resultValueTime: {
         color: "#0F172A",
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: "700",
         marginTop: 2,
     },
     resultValueConfidence: {
         color: "#059669",
-        fontSize: 15,
+        fontSize: 17,
         fontWeight: "800",
         marginTop: 2,
     },
     resultDivider: {
         width: 1,
-        height: 28,
+        height: 30,
         backgroundColor: "#DCFCE7",
-        marginHorizontal: 12,
+        marginHorizontal: 14,
     },
     guidelinesCard: {
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#E2E8F0",
-        borderRadius: 18,
-        padding: 16,
+        borderRadius: 20,
+        padding: 18,
         shadowColor: "#64748B",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.04,
@@ -857,24 +858,24 @@ const styles = StyleSheet.create({
     guidelinesHeader: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 10,
+        marginBottom: 12,
     },
     guidelinesIconWrap: {
-        width: 30,
-        height: 30,
-        borderRadius: 8,
+        width: 32,
+        height: 32,
+        borderRadius: 9,
         backgroundColor: "#EFF6FF",
         justifyContent: "center",
         alignItems: "center",
-        marginRight: 8,
+        marginRight: 9,
     },
     guidelinesTitle: {
         color: "#0F172A",
-        fontSize: 14,
+        fontSize: 15.5,
         fontWeight: "700",
     },
     guidelinesList: {
-        gap: 8,
+        gap: 9,
     },
     guidelineRow: {
         flexDirection: "row",
@@ -882,20 +883,20 @@ const styles = StyleSheet.create({
     },
     guidelineText: {
         color: "#334155",
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 14,
+        lineHeight: 20,
         flex: 1,
     },
     bottomBar: {
         paddingHorizontal: 18,
-        paddingVertical: 12,
+        paddingVertical: 14,
         backgroundColor: "#FFFFFF",
         borderTopWidth: 1,
         borderTopColor: "#F1F5F9",
     },
     captureButton: {
-        height: 52,
-        borderRadius: 14,
+        height: 56,
+        borderRadius: 16,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#2563EB",
@@ -920,8 +921,8 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: "#FFFFFF",
-        fontSize: 15,
+        fontSize: 16.5,
         fontWeight: "800",
-        letterSpacing: 0.5,
+        letterSpacing: 0.6,
     },
 });
