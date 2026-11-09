@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
@@ -46,7 +45,7 @@ export function HomeScreen({ navigation }: Props) {
   });
 
   const heroTopPadding =
-    (Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0) + 16;
+    (Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0) + 12;
 
   useEffect(() => {
     loadHeroStats();
@@ -88,27 +87,15 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="#1A1A2E"
-        translucent={false}
-      />
+      <StatusBar barStyle="light-content" />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* ─── Hero Header with Gradient ─── */}
-          <LinearGradient
-            colors={["#1A1A2E", "#16213E", "#0F3460"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.heroGradient, { paddingTop: heroTopPadding }]}
-          >
-            <Animated.View
-              entering={FadeInUp.duration(800)}
-              style={styles.header}
-            >
+          {/* ─── Top Header Card (Solid Modern Dark) ─── */}
+          <View style={[styles.heroCard, { paddingTop: heroTopPadding }]}>
+            <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
               <View style={styles.headerLeft}>
                 <Text style={styles.greetingText}>{getGreeting()},</Text>
                 <Text style={styles.userName}>
@@ -116,361 +103,250 @@ export function HomeScreen({ navigation }: Props) {
                 </Text>
                 {user?.roles && user.roles.length > 0 && (
                   <View style={styles.roleBadge}>
-                    <Ionicons
-                      name="shield-checkmark"
-                      size={10}
-                      color="#4FACFE"
-                    />
+                    <Ionicons name="shield-checkmark" size={12} color="#38BDF8" />
                     <Text style={styles.roleText}>{user.roles[0]}</Text>
                   </View>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.profileButton}
-                activeOpacity={0.7}
-              >
-                <LinearGradient
-                  colors={["#4FACFE", "#00F2FE"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.avatar}
-                >
-                  <Ionicons name="person" size={24} color="white" />
-                </LinearGradient>
+
+              <TouchableOpacity style={styles.profileButton} activeOpacity={0.8}>
+                <View style={styles.avatar}>
+                  <Ionicons name="person" size={22} color="#38BDF8" />
+                </View>
                 <View style={styles.onlineStatus} />
               </TouchableOpacity>
             </Animated.View>
 
             {/* Date Banner */}
-            <Animated.View
-              entering={FadeInDown.delay(200).duration(600)}
-              style={styles.dateBanner}
-            >
-              <Ionicons
-                name="calendar-outline"
-                size={14}
-                color="rgba(255,255,255,0.5)"
-              />
+            <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.dateBanner}>
+              <Ionicons name="calendar-outline" size={14} color="#94A3B8" />
               <Text style={styles.dateText}>{dateStr}</Text>
             </Animated.View>
 
-            {/* Quick Stats inside hero */}
-            <Animated.View
-              entering={FadeInDown.delay(300).duration(800)}
-              style={styles.statsRow}
-            >
-              <View style={styles.statBox}>
-                <View
-                  style={[
-                    styles.statIconCircle,
-                    { backgroundColor: "rgba(79, 172, 254, 0.2)" },
-                  ]}
-                >
-                  <Ionicons name="people" size={18} color="#4FACFE" />
+            {/* Quick Metrics (2 Solid Cards) */}
+            <Animated.View entering={FadeInDown.delay(250).duration(600)} style={styles.metricsRow}>
+              <View style={styles.metricCard}>
+                <View style={[styles.metricIconWrap, { backgroundColor: "#0369A1" }]}>
+                  <Ionicons name="people" size={18} color="#FFFFFF" />
                 </View>
-                <View>
-                  <Text style={styles.statValue}>
+                <View style={styles.metricTextGroup}>
+                  <Text style={styles.metricValue}>
                     {statsLoading ? "..." : employeeCount}
                   </Text>
-                  <Text style={styles.statName}>Employees</Text>
+                  <Text style={styles.metricLabel}>Employees</Text>
                 </View>
               </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statBox}>
-                <View
-                  style={[
-                    styles.statIconCircle,
-                    { backgroundColor: "rgba(0, 242, 254, 0.2)" },
-                  ]}
-                >
-                  <Ionicons name="checkmark-circle" size={18} color="#00F2FE" />
+
+              <View style={styles.metricCard}>
+                <View style={[styles.metricIconWrap, { backgroundColor: "#059669" }]}>
+                  <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
                 </View>
-                <View>
-                  <Text style={styles.statValue}>
+                <View style={styles.metricTextGroup}>
+                  <Text style={styles.metricValue}>
                     {statsLoading ? "..." : `${attendanceRate.toFixed(1)}%`}
                   </Text>
-                  <Text style={styles.statName}>Attendance</Text>
+                  <Text style={styles.metricLabel}>Attendance</Text>
                 </View>
               </View>
             </Animated.View>
-          </LinearGradient>
+          </View>
 
+          {/* ─── Main Body Content ─── */}
           <View style={styles.content}>
-            {/* ─── Primary Action: Employees ─── */}
-            <Animated.View entering={FadeInDown.delay(400).duration(800)}>
+            {/* Primary Action: Dashboard */}
+            <Animated.View entering={FadeInDown.delay(300).duration(600)}>
               <TouchableOpacity
-                style={styles.primaryCard}
+                style={styles.actionCard}
                 onPress={() => navigation.navigate("Dashboard")}
-                activeOpacity={0.9}
+                activeOpacity={0.85}
               >
-                <LinearGradient
-                  colors={["#667EEA", "#764BA2"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.primaryGradient}
-                >
-                  <View style={styles.primaryIconWrap}>
-                    <Ionicons name="stats-chart" size={28} color="white" />
-                  </View>
-                  <View style={styles.primaryTextWrap}>
-                    <Text style={styles.primaryTitle}>Dashboard</Text>
-                    <Text style={styles.primaryDesc}>
-                      View attendance analytics
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={22}
-                    color="rgba(255,255,255,0.7)"
-                  />
-                </LinearGradient>
+                <View style={[styles.actionIconBox, { backgroundColor: "#4F46E5" }]}>
+                  <Ionicons name="stats-chart" size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.actionTextBox}>
+                  <Text style={styles.actionTitle}>Dashboard</Text>
+                  <Text style={styles.actionSubtitle}>View attendance analytics</Text>
+                </View>
+                <View style={styles.actionArrow}>
+                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                </View>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* ─── Primary Action: Employees ─── */}
-            <Animated.View entering={FadeInDown.delay(500).duration(800)}>
+            {/* Primary Action: Employees */}
+            <Animated.View entering={FadeInDown.delay(350).duration(600)}>
               <TouchableOpacity
-                style={styles.primaryCard}
+                style={styles.actionCard}
                 onPress={() => navigation.navigate("EmployeeList")}
-                activeOpacity={0.9}
+                activeOpacity={0.85}
               >
-                <LinearGradient
-                  colors={["#4FACFE", "#00F2FE"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.primaryGradient}
-                >
-                  <View style={styles.primaryIconWrap}>
-                    <Ionicons name="people" size={28} color="white" />
-                  </View>
-                  <View style={styles.primaryTextWrap}>
-                    <Text style={styles.primaryTitle}>Employees</Text>
-                    <Text style={styles.primaryDesc}>
-                      View & manage staff registry
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={22}
-                    color="rgba(255,255,255,0.7)"
-                  />
-                </LinearGradient>
+                <View style={[styles.actionIconBox, { backgroundColor: "#0284C7" }]}>
+                  <Ionicons name="people" size={24} color="#FFFFFF" />
+                </View>
+                <View style={styles.actionTextBox}>
+                  <Text style={styles.actionTitle}>Employees</Text>
+                  <Text style={styles.actionSubtitle}>View & manage staff registry</Text>
+                </View>
+                <View style={styles.actionArrow}>
+                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                </View>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* ─── Management (Admin only) ─── */}
+            {/* ─── Management Grid (Admin only) ─── */}
             {isAdmin && (
               <>
-                <Animated.View entering={FadeInDown.delay(600).duration(800)}>
+                <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.sectionHeader}>
+                  <View style={styles.sectionTag} />
                   <Text style={styles.sectionTitle}>Management</Text>
                 </Animated.View>
 
-                <Animated.View
-                  entering={FadeInDown.delay(700).duration(800)}
-                  style={styles.compactRow}
-                >
+                <Animated.View entering={FadeInDown.delay(450).duration(600)} style={styles.gridRow}>
                   <TouchableOpacity
-                    style={styles.compactCard}
+                    style={styles.gridCard}
                     onPress={() => navigation.navigate("DepartmentList")}
-                    activeOpacity={0.85}
+                    activeOpacity={0.8}
                   >
-                    <View
-                      style={[
-                        styles.compactIcon,
-                        { backgroundColor: "rgba(79, 172, 254, 0.1)" },
-                      ]}
-                    >
-                      <Ionicons name="business" size={22} color="#4FACFE" />
+                    <View style={[styles.gridIcon, { backgroundColor: "#1E3A8A" }]}>
+                      <Ionicons name="business" size={20} color="#60A5FA" />
                     </View>
-                    <Text style={styles.compactTitle}>Depts</Text>
-                    <Text style={styles.compactSub}>Departments</Text>
+                    <Text style={styles.gridTitle}>Depts</Text>
+                    <Text style={styles.gridSub}>Departments</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.compactCard}
+                    style={styles.gridCard}
                     onPress={() => navigation.navigate("ProductionLineList")}
-                    activeOpacity={0.85}
+                    activeOpacity={0.8}
                   >
-                    <View
-                      style={[
-                        styles.compactIcon,
-                        { backgroundColor: "rgba(0, 200, 150, 0.1)" },
-                      ]}
-                    >
-                      <Ionicons name="git-network" size={22} color="#00C896" />
+                    <View style={[styles.gridIcon, { backgroundColor: "#064E3B" }]}>
+                      <Ionicons name="git-network" size={20} color="#34D399" />
                     </View>
-                    <Text style={styles.compactTitle}>Lines</Text>
-                    <Text style={styles.compactSub}>Production</Text>
+                    <Text style={styles.gridTitle}>Lines</Text>
+                    <Text style={styles.gridSub}>Production</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.compactCard}
+                    style={styles.gridCard}
                     onPress={() => navigation.navigate("ShiftList")}
-                    activeOpacity={0.85}
+                    activeOpacity={0.8}
                   >
-                    <View
-                      style={[
-                        styles.compactIcon,
-                        { backgroundColor: "rgba(255, 152, 0, 0.1)" },
-                      ]}
-                    >
-                      <Ionicons name="time" size={22} color="#FF9800" />
+                    <View style={[styles.gridIcon, { backgroundColor: "#78350F" }]}>
+                      <Ionicons name="time" size={20} color="#FBBF24" />
                     </View>
-                    <Text style={styles.compactTitle}>Shifts</Text>
-                    <Text style={styles.compactSub}>Scheduling</Text>
+                    <Text style={styles.gridTitle}>Shifts</Text>
+                    <Text style={styles.gridSub}>Scheduling</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.compactCard}
+                    style={styles.gridCard}
                     onPress={() => navigation.navigate("ShiftAssignmentList")}
-                    activeOpacity={0.85}
+                    activeOpacity={0.8}
                   >
-                    <View
-                      style={[
-                        styles.compactIcon,
-                        { backgroundColor: "rgba(118, 75, 162, 0.1)" },
-                      ]}
-                    >
-                      <Ionicons name="calendar" size={22} color="#764BA2" />
+                    <View style={[styles.gridIcon, { backgroundColor: "#581C87" }]}>
+                      <Ionicons name="calendar" size={20} color="#C084FC" />
                     </View>
-                    <Text style={styles.compactTitle}>Assigns</Text>
-                    <Text style={styles.compactSub}>Shift Assignments</Text>
+                    <Text style={styles.gridTitle}>Assigns</Text>
+                    <Text style={styles.gridSub}>Shift Assignments</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </>
             )}
 
-            {/* ─── System ─── */}
-            <Animated.View entering={FadeInDown.delay(800).duration(800)}>
+            {/* ─── System Grid ─── */}
+            <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.sectionHeader}>
+              <View style={[styles.sectionTag, { backgroundColor: "#38BDF8" }]} />
               <Text style={styles.sectionTitle}>System</Text>
             </Animated.View>
 
-            <Animated.View
-              entering={FadeInDown.delay(900).duration(800)}
-              style={styles.compactRow}
-            >
+            <Animated.View entering={FadeInDown.delay(550).duration(600)} style={styles.gridRow}>
               <TouchableOpacity
-                style={styles.compactCard}
+                style={styles.gridCard}
                 onPress={() => navigation.navigate("AttendanceHistory", {})}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
               >
-                <View
-                  style={[
-                    styles.compactIcon,
-                    { backgroundColor: "rgba(16, 185, 129, 0.1)" },
-                  ]}
-                >
-                  <Ionicons name="list" size={22} color="#10B981" />
+                <View style={[styles.gridIcon, { backgroundColor: "#065F46" }]}>
+                  <Ionicons name="list" size={20} color="#34D399" />
                 </View>
-                <Text style={styles.compactTitle}>History</Text>
-                <Text style={styles.compactSub}>Attendance</Text>
+                <Text style={styles.gridTitle}>History</Text>
+                <Text style={styles.gridSub}>Attendance</Text>
               </TouchableOpacity>
 
+              {/* Check-in Card (Prominent Accent Border) */}
               <TouchableOpacity
-                style={styles.compactCard}
+                style={[styles.gridCard, styles.checkInHighlightCard]}
                 onPress={() => navigation.navigate("AttendanceCheckIn" as any)}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
               >
-                <View
-                  style={[
-                    styles.compactIcon,
-                    { backgroundColor: "rgba(102, 126, 234, 0.1)" },
-                  ]}
-                >
-                  <Ionicons name="scan" size={22} color="#667EEA" />
+                <View style={[styles.gridIcon, { backgroundColor: "#0369A1" }]}>
+                  <Ionicons name="scan" size={20} color="#38BDF8" />
                 </View>
-                <Text style={styles.compactTitle}>Check-in</Text>
-                <Text style={styles.compactSub}>Face Scan</Text>
+                <Text style={[styles.gridTitle, { color: "#38BDF8" }]}>Check-in</Text>
+                <Text style={styles.gridSub}>Face Scan</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.compactCard}
+                style={styles.gridCard}
                 onPress={() => navigation.navigate("IoTDeviceList")}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
               >
-                <View
-                  style={[
-                    styles.compactIcon,
-                    { backgroundColor: "rgba(75, 121, 161, 0.1)" },
-                  ]}
-                >
-                  <Ionicons name="hardware-chip" size={22} color="#4B79A1" />
+                <View style={[styles.gridIcon, { backgroundColor: "#4338CA" }]}>
+                  <Ionicons name="hardware-chip" size={20} color="#818CF8" />
                 </View>
-                <Text style={styles.compactTitle}>IoT</Text>
-                <Text style={styles.compactSub}>Devices</Text>
+                <Text style={styles.gridTitle}>IoT</Text>
+                <Text style={styles.gridSub}>Devices</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.compactCard}
+                style={styles.gridCard}
                 onPress={() => navigation.navigate("Reports")}
-                activeOpacity={0.85}
+                activeOpacity={0.8}
               >
-                <View
-                  style={[
-                    styles.compactIcon,
-                    { backgroundColor: "rgba(79, 172, 254, 0.12)" },
-                  ]}
-                >
-                  <Ionicons name="document-text" size={22} color="#4FACFE" />
+                <View style={[styles.gridIcon, { backgroundColor: "#831843" }]}>
+                  <Ionicons name="document-text" size={20} color="#F472B6" />
                 </View>
-                <Text style={styles.compactTitle}>Reports</Text>
-                <Text style={styles.compactSub}>Analytics + Export</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.logoutCard}
-                onPress={logout}
-                activeOpacity={0.85}
-              >
-                <View
-                  style={[
-                    styles.compactIcon,
-                    {
-                      backgroundColor: "rgba(255, 77, 77, 0.1)",
-                      marginBottom: 0,
-                      marginRight: 15,
-                    },
-                  ]}
-                >
-                  <Ionicons name="log-out" size={22} color="#FF4D4D" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.compactTitle, { color: "#FF4D4D" }]}>
-                    Logout
-                  </Text>
-                  <Text style={styles.compactSub}>Sign out securely</Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color="rgba(255, 77, 77, 0.5)"
-                />
+                <Text style={styles.gridTitle}>Reports</Text>
+                <Text style={styles.gridSub}>Analytics + Export</Text>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* ─── Quick Tips Card ─── */}
-            <Animated.View entering={FadeInDown.delay(1000).duration(800)}>
+            {/* Logout Card */}
+            <Animated.View entering={FadeInDown.delay(600).duration(600)}>
+              <TouchableOpacity style={styles.logoutCard} onPress={logout} activeOpacity={0.85}>
+                <View style={styles.logoutIcon}>
+                  <Ionicons name="log-out" size={20} color="#EF4444" />
+                </View>
+                <View style={styles.logoutTextWrap}>
+                  <Text style={styles.logoutTitle}>Logout</Text>
+                  <Text style={styles.logoutSub}>Sign out securely</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Quick Tips Card */}
+            <Animated.View entering={FadeInDown.delay(650).duration(600)}>
               <View style={styles.tipsCard}>
                 <View style={styles.tipsHeader}>
-                  <View style={styles.tipsIconWrap}>
-                    <Ionicons name="bulb" size={18} color="#FF9800" />
+                  <View style={styles.tipsIcon}>
+                    <Ionicons name="bulb-outline" size={18} color="#F59E0B" />
                   </View>
                   <Text style={styles.tipsTitle}>Quick Tips</Text>
                 </View>
                 <View style={styles.tipItem}>
-                  <View style={styles.tipDot} />
+                  <View style={styles.tipBullet} />
                   <Text style={styles.tipText}>
                     Use face recognition for faster attendance check-in
                   </Text>
                 </View>
                 <View style={styles.tipItem}>
-                  <View style={styles.tipDot} />
+                  <View style={styles.tipBullet} />
                   <Text style={styles.tipText}>
                     Create departments before adding production lines
                   </Text>
                 </View>
                 <View style={styles.tipItem}>
-                  <View style={styles.tipDot} />
+                  <View style={styles.tipBullet} />
                   <Text style={styles.tipText}>
                     Pull down to refresh on any list screen
                   </Text>
@@ -479,13 +355,10 @@ export function HomeScreen({ navigation }: Props) {
             </Animated.View>
 
             {/* Footer */}
-            <Animated.View
-              entering={FadeInDown.delay(1100).duration(800)}
-              style={styles.footer}
-            >
+            <View style={styles.footer}>
               <Text style={styles.footerText}>HRMS Face Attendance v1.0</Text>
               <Text style={styles.footerSub}>Smart Workforce Management</Text>
-            </Animated.View>
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -496,57 +369,57 @@ export function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F6FA",
+    backgroundColor: "#0B0F19", // Solid deep dark background
   },
   safeArea: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 24,
   },
 
-  // ─── Hero Gradient ───
-  heroGradient: {
-    paddingHorizontal: 22,
-    paddingTop: 16,
-    paddingBottom: 28,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+  // ─── Hero Card ───
+  heroCard: {
+    backgroundColor: "#111827",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1F2937",
   },
-
-  // ─── Header ───
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   headerLeft: {},
   greetingText: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 14,
+    color: "#94A3B8",
+    fontSize: 13,
     fontWeight: "500",
-    letterSpacing: 0.5,
   },
   userName: {
-    color: "white",
-    fontSize: 26,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "800",
     marginTop: 2,
   },
   roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(79, 172, 254, 0.15)",
+    backgroundColor: "#1F2937",
+    borderWidth: 1,
+    borderColor: "#374151",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 8,
     alignSelf: "flex-start",
     marginTop: 6,
-    gap: 4,
+    gap: 5,
   },
   roleText: {
-    color: "#4FACFE",
+    color: "#38BDF8",
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -555,30 +428,26 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#1F2937",
+    borderWidth: 1.5,
+    borderColor: "#374151",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#4FACFE",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
   },
   onlineStatus: {
     position: "absolute",
-    bottom: -1,
-    right: -1,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#00E676",
-    borderWidth: 2.5,
-    borderColor: "#16213E",
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#10B981",
+    borderWidth: 2,
+    borderColor: "#111827",
   },
-
-  // ─── Date Banner ───
   dateBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -586,239 +455,255 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dateText: {
-    color: "rgba(255,255,255,0.45)",
+    color: "#94A3B8",
     fontSize: 12,
     fontWeight: "500",
   },
 
-  // ─── Stats (inside hero) ───
-  statsRow: {
+  // ─── Metrics Row (2 solid cards) ───
+  metricsRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 20,
-    padding: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    gap: 12,
   },
-  statBox: {
+  metricCard: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
+    backgroundColor: "#1F2937",
+    borderWidth: 1,
+    borderColor: "#374151",
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  statIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
+  metricIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "white",
-  },
-  statName: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.5)",
-    fontWeight: "500",
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginHorizontal: 6,
-  },
-
-  // ─── Content (below hero) ───
-  content: {
-    paddingHorizontal: 22,
-    paddingTop: 24,
-    paddingBottom: 30,
-  },
-
-  // ─── Section Title ───
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#1A1A1A", // Darker for better visibility
-    letterSpacing: 1,
-    marginBottom: 16,
-    marginTop: 15,
-  },
-
-  // ─── Primary Card ───
-  primaryCard: {
-    marginBottom: 22,
-    borderRadius: 22,
-    overflow: "hidden",
-    shadowColor: "#4FACFE",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  primaryGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 22,
-    paddingHorizontal: 22,
-  },
-  primaryIconWrap: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  primaryTextWrap: {
+  metricTextGroup: {
     flex: 1,
   },
-  primaryTitle: {
-    color: "white",
-    fontSize: 19,
-    fontWeight: "bold",
+  metricValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
-  primaryDesc: {
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 13,
-    fontWeight: "500",
-    marginTop: 3,
+  metricLabel: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "600",
+    marginTop: 1,
   },
 
-  // ─── Compact Cards (2-column grids) ───
-  compactRow: {
+  // ─── Main Content ───
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+  },
+
+  // ─── Primary Action Cards ───
+  actionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#1F2937",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  actionIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+  },
+  actionTextBox: {
+    flex: 1,
+  },
+  actionTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  actionSubtitle: {
+    color: "#94A3B8",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  actionArrow: {
+    paddingLeft: 8,
+  },
+
+  // ─── Section Header ───
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 18,
+    marginBottom: 12,
+    gap: 8,
+  },
+  sectionTag: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    backgroundColor: "#6366F1",
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+
+  // ─── Grid (2x2 Cards) ───
+  gridRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: 5,
   },
-  compactCard: {
+  gridCard: {
     width: "48%",
-    backgroundColor: "white",
-    borderRadius: 18,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
-    alignItems: "center",
-    marginBottom: 15,
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: "#ECECEC",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  logoutCard: {
-    flexDirection: "row",
-    width: "100%",
-    backgroundColor: "white",
-    borderRadius: 18,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    borderColor: "#1F2937",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
     alignItems: "center",
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "rgba(255, 77, 77, 0.15)",
-    shadowColor: "#FF4D4D",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    marginBottom: 12,
   },
-  compactIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
+  checkInHighlightCard: {
+    borderColor: "#0284C7",
+    backgroundColor: "#0F1E36",
+  },
+  gridIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  compactTitle: {
-    fontSize: 13,
+  gridTitle: {
+    fontSize: 14,
     fontWeight: "700",
-    color: "#333",
+    color: "#FFFFFF",
   },
-  compactSub: {
-    fontSize: 10,
+  gridSub: {
+    fontSize: 11,
     fontWeight: "500",
-    color: "#BBB",
+    color: "#94A3B8",
     marginTop: 2,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    textAlign: "center",
   },
 
-  // ─── Tips Card ───
-  tipsCard: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 20,
-    marginTop: 12,
+  // ─── Logout Card ───
+  logoutCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#111827",
     borderWidth: 1,
-    borderColor: "#F0F0F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
+    borderColor: "rgba(239, 68, 68, 0.3)",
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  logoutIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  logoutTextWrap: {
+    flex: 1,
+  },
+  logoutTitle: {
+    color: "#EF4444",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  logoutSub: {
+    color: "#94A3B8",
+    fontSize: 11,
+    marginTop: 1,
+  },
+
+  // ─── Quick Tips ───
+  tipsCard: {
+    backgroundColor: "#111827",
+    borderWidth: 1,
+    borderColor: "#1F2937",
+    borderRadius: 16,
+    padding: 16,
   },
   tipsHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 12,
+    gap: 8,
   },
-  tipsIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(255, 152, 0, 0.1)",
+  tipsIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(245, 158, 11, 0.15)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 10,
   },
   tipsTitle: {
-    fontSize: 15,
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "700",
-    color: "#333",
   },
   tipItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  tipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4FACFE",
-    marginTop: 5,
-    marginRight: 10,
+  tipBullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#38BDF8",
+    marginTop: 6,
+    marginRight: 8,
   },
   tipText: {
     flex: 1,
-    fontSize: 13,
-    color: "#777",
+    color: "#94A3B8",
+    fontSize: 12,
     lineHeight: 18,
   },
 
   // ─── Footer ───
   footer: {
     alignItems: "center",
-    marginTop: 24,
-    paddingBottom: 10,
+    marginTop: 20,
+    paddingBottom: 8,
   },
   footerText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
-    color: "#CCC",
+    color: "#64748B",
   },
   footerSub: {
     fontSize: 11,
-    color: "#DDD",
+    color: "#475569",
     marginTop: 2,
   },
 });

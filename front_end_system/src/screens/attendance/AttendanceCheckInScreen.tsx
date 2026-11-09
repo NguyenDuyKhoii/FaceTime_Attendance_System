@@ -6,7 +6,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import * as FileSystem from "expo-file-system/legacy";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -288,7 +287,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
     };
 
     return (
-        <LinearGradient colors={["#0A1128", "#101F42", "#1C2D5A"]} style={styles.container}>
+        <View style={styles.container}>
             <SafeAreaView style={styles.safeArea}>
                 {/* Header */}
                 <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
@@ -486,29 +485,26 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 {/* Fixed Bottom Action Button */}
                 <View style={styles.bottomBar}>
                     <TouchableOpacity
-                        style={[styles.captureButton, (capturing || !cameraIP) && styles.buttonDisabled]}
+                        style={[
+                            styles.captureButton,
+                            capturing ? styles.captureButtonProcessing : styles.captureButtonActive,
+                            (!cameraIP || capturing) && styles.buttonDisabled,
+                        ]}
                         onPress={handleCapture}
                         disabled={capturing || !cameraIP}
                         activeOpacity={0.85}
                     >
-                        <LinearGradient
-                            colors={capturing ? ["#475569", "#334155"] : ["#06B6D4", "#3B82F6"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.buttonGradient}
-                        >
-                            {capturing ? (
-                                <View style={styles.buttonContent}>
-                                    <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 10 }} />
-                                    <Text style={styles.buttonText}>ĐANG XỬ LÝ NHẬN DIỆN...</Text>
-                                </View>
-                            ) : (
-                                <View style={styles.buttonContent}>
-                                    <Ionicons name="camera-outline" size={24} color="#FFFFFF" style={{ marginRight: 10 }} />
-                                    <Text style={styles.buttonText}>CHỤP & ĐIỂM DANH</Text>
-                                </View>
-                            )}
-                        </LinearGradient>
+                        {capturing ? (
+                            <View style={styles.buttonContent}>
+                                <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 10 }} />
+                                <Text style={styles.buttonText}>ĐANG XỬ LÝ NHẬN DIỆN...</Text>
+                            </View>
+                        ) : (
+                            <View style={styles.buttonContent}>
+                                <Ionicons name="camera" size={22} color="#FFFFFF" style={{ marginRight: 10 }} />
+                                <Text style={styles.buttonText}>CHỤP & ĐIỂM DANH</Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -521,13 +517,14 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 onClose={() => setAlert({ ...alert, visible: false })}
                 onConfirm={alert.onConfirm}
             />
-        </LinearGradient>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: "#0B0F19",
     },
     safeArea: {
         flex: 1,
@@ -849,28 +846,26 @@ const styles = StyleSheet.create({
     bottomBar: {
         paddingHorizontal: 18,
         paddingVertical: 12,
-        backgroundColor: "rgba(10, 17, 40, 0.95)",
+        backgroundColor: "#111827",
         borderTopWidth: 1,
-        borderTopColor: "rgba(255, 255, 255, 0.08)",
+        borderTopColor: "#1F2937",
     },
     captureButton: {
-        height: 56,
-        borderRadius: 16,
-        overflow: "hidden",
-        elevation: 6,
-        shadowColor: "#06B6D4",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-    },
-    buttonGradient: {
-        flex: 1,
+        height: 54,
+        borderRadius: 14,
         justifyContent: "center",
         alignItems: "center",
+    },
+    captureButtonActive: {
+        backgroundColor: "#0284C7",
+    },
+    captureButtonProcessing: {
+        backgroundColor: "#334155",
     },
     buttonContent: {
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "center",
     },
     buttonDisabled: {
         opacity: 0.5,
@@ -879,6 +874,6 @@ const styles = StyleSheet.create({
         color: "#FFFFFF",
         fontSize: 16,
         fontWeight: "800",
-        letterSpacing: 0.8,
+        letterSpacing: 0.5,
     },
 });
