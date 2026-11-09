@@ -3,6 +3,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -23,13 +24,15 @@ export function HomeScreen({ navigation }: Props) {
   const { logout, user } = useAuth();
   const [employeeCount, setEmployeeCount] = useState(0);
   const [attendanceRate, setAttendanceRate] = useState(0);
+  const [presentCount, setPresentCount] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 18) return "Good Afternoon";
-    return "Good Evening";
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
   };
 
   const isAdmin = user?.roles?.some((r) =>
@@ -39,13 +42,13 @@ export function HomeScreen({ navigation }: Props) {
   const today = new Date();
   const dateStr = today.toLocaleDateString("en-US", {
     weekday: "long",
-    year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
+    year: "numeric",
   });
 
   const heroTopPadding =
-    (Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0) + 12;
+    (Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) : 0) + 10;
 
   useEffect(() => {
     loadHeroStats();
@@ -75,6 +78,7 @@ export function HomeScreen({ navigation }: Props) {
       }
 
       setEmployeeCount(totalEmployees);
+      setPresentCount(presentEmployees);
       setAttendanceRate(
         totalEmployees > 0 ? (presentEmployees / totalEmployees) * 100 : 0,
       );
@@ -82,282 +86,322 @@ export function HomeScreen({ navigation }: Props) {
       console.warn("Failed to load home stats", error);
     } finally {
       setStatsLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadHeroStats();
   };
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2563EB"
+              colors={["#2563EB"]}
+            />
+          }
         >
-          {/* ─── Top Header Card (Solid Modern Dark) ─── */}
-          <View style={[styles.heroCard, { paddingTop: heroTopPadding }]}>
-            <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
-              <View style={styles.headerLeft}>
-                <Text style={styles.greetingText}>{getGreeting()},</Text>
-                <Text style={styles.userName}>
-                  {user?.fullName || user?.username || "Admin"}
+          {/* ─── Top Header (Clean Light Canvas) ─── */}
+          <View style={[styles.topHeader, { paddingTop: heroTopPadding }]}>
+            <Animated.View entering={FadeInUp.duration(500)} style={styles.userBar}>
+              <View style={styles.userTextGroup}>
+                <Text style={styles.greetingLabel}>{getGreeting()},</Text>
+                <Text style={styles.userNameText} numberOfLines={1}>
+                  {user?.fullName || user?.username || "Administrator"}
                 </Text>
-                {user?.roles && user.roles.length > 0 && (
+                <View style={styles.badgeRow}>
                   <View style={styles.roleBadge}>
-                    <Ionicons name="shield-checkmark" size={12} color="#38BDF8" />
-                    <Text style={styles.roleText}>{user.roles[0]}</Text>
+                    <View style={styles.roleDot} />
+                    <Text style={styles.roleText}>{user?.roles?.[0] || "ADMIN"}</Text>
                   </View>
-                )}
+                  <Text style={styles.dateChipText}>• {dateStr}</Text>
+                </View>
               </View>
 
-              <TouchableOpacity style={styles.profileButton} activeOpacity={0.8}>
-                <View style={styles.avatar}>
-                  <Ionicons name="person" size={22} color="#38BDF8" />
+              <TouchableOpacity
+                style={styles.avatarButton}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate("EmployeeList")}
+              >
+                <View style={styles.avatarContainer}>
+                  <Ionicons name="person" size={22} color="#2563EB" />
                 </View>
-                <View style={styles.onlineStatus} />
+                <View style={styles.liveIndicator} />
               </TouchableOpacity>
-            </Animated.View>
-
-            {/* Date Banner */}
-            <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.dateBanner}>
-              <Ionicons name="calendar-outline" size={14} color="#94A3B8" />
-              <Text style={styles.dateText}>{dateStr}</Text>
-            </Animated.View>
-
-            {/* Quick Metrics (2 Solid Cards) */}
-            <Animated.View entering={FadeInDown.delay(250).duration(600)} style={styles.metricsRow}>
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconWrap, { backgroundColor: "#0369A1" }]}>
-                  <Ionicons name="people" size={18} color="#FFFFFF" />
-                </View>
-                <View style={styles.metricTextGroup}>
-                  <Text style={styles.metricValue}>
-                    {statsLoading ? "..." : employeeCount}
-                  </Text>
-                  <Text style={styles.metricLabel}>Employees</Text>
-                </View>
-              </View>
-
-              <View style={styles.metricCard}>
-                <View style={[styles.metricIconWrap, { backgroundColor: "#059669" }]}>
-                  <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
-                </View>
-                <View style={styles.metricTextGroup}>
-                  <Text style={styles.metricValue}>
-                    {statsLoading ? "..." : `${attendanceRate.toFixed(1)}%`}
-                  </Text>
-                  <Text style={styles.metricLabel}>Attendance</Text>
-                </View>
-              </View>
             </Animated.View>
           </View>
 
-          {/* ─── Main Body Content ─── */}
           <View style={styles.content}>
-            {/* Primary Action: Dashboard */}
-            <Animated.View entering={FadeInDown.delay(300).duration(600)}>
+            {/* ─── Spotlight Card: Quick Face Check-in ─── */}
+            <Animated.View entering={FadeInDown.delay(100).duration(600)}>
               <TouchableOpacity
-                style={styles.actionCard}
-                onPress={() => navigation.navigate("Dashboard")}
-                activeOpacity={0.85}
+                style={styles.heroCheckInCard}
+                onPress={() => navigation.navigate("AttendanceCheckIn" as any)}
+                activeOpacity={0.88}
               >
-                <View style={[styles.actionIconBox, { backgroundColor: "#4F46E5" }]}>
-                  <Ionicons name="stats-chart" size={24} color="#FFFFFF" />
+                <View style={styles.heroLeft}>
+                  <View style={styles.heroScannerIcon}>
+                    <Ionicons name="scan" size={26} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.heroTextWrap}>
+                    <View style={styles.heroBadge}>
+                      <Text style={styles.heroBadgeText}>LIVE CAMERA</Text>
+                    </View>
+                    <Text style={styles.heroTitle}>Face Attendance</Text>
+                    <Text style={styles.heroSubtitle}>
+                      Chạm để mở camera nhận diện khuôn mặt
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.actionTextBox}>
-                  <Text style={styles.actionTitle}>Dashboard</Text>
-                  <Text style={styles.actionSubtitle}>View attendance analytics</Text>
-                </View>
-                <View style={styles.actionArrow}>
-                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                <View style={styles.heroArrowBtn}>
+                  <Ionicons name="arrow-forward" size={18} color="#2563EB" />
                 </View>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* Primary Action: Employees */}
-            <Animated.View entering={FadeInDown.delay(350).duration(600)}>
+            {/* ─── Interactive Overview Widgets (2 Cards) ─── */}
+            <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.statsRow}>
+              {/* Total Staff Card */}
               <TouchableOpacity
-                style={styles.actionCard}
+                style={styles.statCard}
                 onPress={() => navigation.navigate("EmployeeList")}
                 activeOpacity={0.85}
               >
-                <View style={[styles.actionIconBox, { backgroundColor: "#0284C7" }]}>
-                  <Ionicons name="people" size={24} color="#FFFFFF" />
+                <View style={styles.statHeader}>
+                  <View style={[styles.statIconBadge, { backgroundColor: "#EFF6FF" }]}>
+                    <Ionicons name="people" size={18} color="#2563EB" />
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
                 </View>
-                <View style={styles.actionTextBox}>
-                  <Text style={styles.actionTitle}>Employees</Text>
-                  <Text style={styles.actionSubtitle}>View & manage staff registry</Text>
+                <Text style={styles.statNumber}>
+                  {statsLoading ? "--" : employeeCount}
+                </Text>
+                <Text style={styles.statLabel}>Nhân viên</Text>
+                <Text style={styles.statFootnote}>Hồ sơ đăng ký</Text>
+              </TouchableOpacity>
+
+              {/* Attendance Rate Card */}
+              <TouchableOpacity
+                style={styles.statCard}
+                onPress={() => navigation.navigate("Dashboard")}
+                activeOpacity={0.85}
+              >
+                <View style={styles.statHeader}>
+                  <View style={[styles.statIconBadge, { backgroundColor: "#ECFDF5" }]}>
+                    <Ionicons name="checkmark-done" size={18} color="#059669" />
+                  </View>
+                  <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
                 </View>
-                <View style={styles.actionArrow}>
-                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                <Text style={[styles.statNumber, { color: "#059669" }]}>
+                  {statsLoading ? "--%" : `${attendanceRate.toFixed(0)}%`}
+                </Text>
+                <Text style={styles.statLabel}>Có mặt hôm nay</Text>
+                <Text style={styles.statFootnote}>
+                  {presentCount}/{employeeCount} nhân sự
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* ─── Primary Quick Actions ─── */}
+            <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.quickActionRow}>
+              <TouchableOpacity
+                style={styles.actionPillCard}
+                onPress={() => navigation.navigate("Dashboard")}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.actionPillIcon, { backgroundColor: "#F3E8FF" }]}>
+                  <Ionicons name="stats-chart" size={20} color="#7C3AED" />
                 </View>
+                <View style={styles.actionPillTextGroup}>
+                  <Text style={styles.actionPillTitle}>Thống Kê</Text>
+                  <Text style={styles.actionPillSub}>Analytics</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionPillCard}
+                onPress={() => navigation.navigate("EmployeeList")}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.actionPillIcon, { backgroundColor: "#E0F2FE" }]}>
+                  <Ionicons name="finger-print" size={20} color="#0284C7" />
+                </View>
+                <View style={styles.actionPillTextGroup}>
+                  <Text style={styles.actionPillTitle}>Nhân Viên</Text>
+                  <Text style={styles.actionPillSub}>Face Enroll</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
               </TouchableOpacity>
             </Animated.View>
 
             {/* ─── Management Grid (Admin only) ─── */}
             {isAdmin && (
               <>
-                <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.sectionHeader}>
+                <Animated.View entering={FadeInDown.delay(350).duration(600)} style={styles.sectionHeaderRow}>
                   <View style={styles.sectionTag} />
-                  <Text style={styles.sectionTitle}>Management</Text>
+                  <Text style={styles.sectionHeading}>Quản Lý Nhân Sự & Ca</Text>
+                  <View style={styles.counterBadge}>
+                    <Text style={styles.counterText}>4 mục</Text>
+                  </View>
                 </Animated.View>
 
-                <Animated.View entering={FadeInDown.delay(450).duration(600)} style={styles.gridRow}>
+                <Animated.View entering={FadeInDown.delay(400).duration(600)} style={styles.gridContainer}>
+                  {/* Departments */}
                   <TouchableOpacity
-                    style={styles.gridCard}
+                    style={styles.bentoCard}
                     onPress={() => navigation.navigate("DepartmentList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.gridIcon, { backgroundColor: "#1E3A8A" }]}>
-                      <Ionicons name="business" size={20} color="#60A5FA" />
+                    <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
+                      <Ionicons name="business" size={22} color="#2563EB" />
                     </View>
-                    <Text style={styles.gridTitle}>Depts</Text>
-                    <Text style={styles.gridSub}>Departments</Text>
+                    <Text style={styles.bentoTitle}>Phòng Ban</Text>
+                    <Text style={styles.bentoSubtitle}>Sơ đồ tổ chức</Text>
                   </TouchableOpacity>
 
+                  {/* Production Lines */}
                   <TouchableOpacity
-                    style={styles.gridCard}
+                    style={styles.bentoCard}
                     onPress={() => navigation.navigate("ProductionLineList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.gridIcon, { backgroundColor: "#064E3B" }]}>
-                      <Ionicons name="git-network" size={20} color="#34D399" />
+                    <View style={[styles.bentoIconWrap, { backgroundColor: "#ECFDF5" }]}>
+                      <Ionicons name="git-network" size={22} color="#059669" />
                     </View>
-                    <Text style={styles.gridTitle}>Lines</Text>
-                    <Text style={styles.gridSub}>Production</Text>
+                    <Text style={styles.bentoTitle}>Dây Chuyền</Text>
+                    <Text style={styles.bentoSubtitle}>Khu vực làm việc</Text>
                   </TouchableOpacity>
 
+                  {/* Shifts */}
                   <TouchableOpacity
-                    style={styles.gridCard}
+                    style={styles.bentoCard}
                     onPress={() => navigation.navigate("ShiftList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.gridIcon, { backgroundColor: "#78350F" }]}>
-                      <Ionicons name="time" size={20} color="#FBBF24" />
+                    <View style={[styles.bentoIconWrap, { backgroundColor: "#FFFBEB" }]}>
+                      <Ionicons name="time" size={22} color="#D97706" />
                     </View>
-                    <Text style={styles.gridTitle}>Shifts</Text>
-                    <Text style={styles.gridSub}>Scheduling</Text>
+                    <Text style={styles.bentoTitle}>Ca Làm Việc</Text>
+                    <Text style={styles.bentoSubtitle}>Khung giờ chuẩn</Text>
                   </TouchableOpacity>
 
+                  {/* Shift Assignments */}
                   <TouchableOpacity
-                    style={styles.gridCard}
+                    style={styles.bentoCard}
                     onPress={() => navigation.navigate("ShiftAssignmentList")}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.gridIcon, { backgroundColor: "#581C87" }]}>
-                      <Ionicons name="calendar" size={20} color="#C084FC" />
+                    <View style={[styles.bentoIconWrap, { backgroundColor: "#FAF5FF" }]}>
+                      <Ionicons name="calendar" size={22} color="#7C3AED" />
                     </View>
-                    <Text style={styles.gridTitle}>Assigns</Text>
-                    <Text style={styles.gridSub}>Shift Assignments</Text>
+                    <Text style={styles.bentoTitle}>Phân Ca</Text>
+                    <Text style={styles.bentoSubtitle}>Lịch trực nhân viên</Text>
                   </TouchableOpacity>
                 </Animated.View>
               </>
             )}
 
-            {/* ─── System Grid ─── */}
-            <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.sectionHeader}>
-              <View style={[styles.sectionTag, { backgroundColor: "#38BDF8" }]} />
-              <Text style={styles.sectionTitle}>System</Text>
+            {/* ─── System & Tools Grid ─── */}
+            <Animated.View entering={FadeInDown.delay(450).duration(600)} style={styles.sectionHeaderRow}>
+              <View style={[styles.sectionTag, { backgroundColor: "#0284C7" }]} />
+              <Text style={styles.sectionHeading}>Hệ Thống & Báo Cáo</Text>
+              <View style={styles.counterBadge}>
+                <Text style={styles.counterText}>4 mục</Text>
+              </View>
             </Animated.View>
 
-            <Animated.View entering={FadeInDown.delay(550).duration(600)} style={styles.gridRow}>
+            <Animated.View entering={FadeInDown.delay(500).duration(600)} style={styles.gridContainer}>
+              {/* History */}
               <TouchableOpacity
-                style={styles.gridCard}
+                style={styles.bentoCard}
                 onPress={() => navigation.navigate("AttendanceHistory", {})}
                 activeOpacity={0.8}
               >
-                <View style={[styles.gridIcon, { backgroundColor: "#065F46" }]}>
-                  <Ionicons name="list" size={20} color="#34D399" />
+                <View style={[styles.bentoIconWrap, { backgroundColor: "#F0FDFA" }]}>
+                  <Ionicons name="reader-outline" size={22} color="#0D9488" />
                 </View>
-                <Text style={styles.gridTitle}>History</Text>
-                <Text style={styles.gridSub}>Attendance</Text>
+                <Text style={styles.bentoTitle}>Lịch Sử</Text>
+                <Text style={styles.bentoSubtitle}>Nhật ký check-in</Text>
               </TouchableOpacity>
 
-              {/* Check-in Card (Prominent Accent Border) */}
+              {/* Check-in Shortcut */}
               <TouchableOpacity
-                style={[styles.gridCard, styles.checkInHighlightCard]}
+                style={[styles.bentoCard, styles.bentoCardHighlight]}
                 onPress={() => navigation.navigate("AttendanceCheckIn" as any)}
                 activeOpacity={0.8}
               >
-                <View style={[styles.gridIcon, { backgroundColor: "#0369A1" }]}>
-                  <Ionicons name="scan" size={20} color="#38BDF8" />
+                <View style={[styles.bentoIconWrap, { backgroundColor: "#EFF6FF" }]}>
+                  <Ionicons name="camera" size={22} color="#2563EB" />
                 </View>
-                <Text style={[styles.gridTitle, { color: "#38BDF8" }]}>Check-in</Text>
-                <Text style={styles.gridSub}>Face Scan</Text>
+                <Text style={[styles.bentoTitle, { color: "#2563EB" }]}>Điểm Danh</Text>
+                <Text style={styles.bentoSubtitle}>Camera AI</Text>
               </TouchableOpacity>
 
+              {/* IoT Devices */}
               <TouchableOpacity
-                style={styles.gridCard}
+                style={styles.bentoCard}
                 onPress={() => navigation.navigate("IoTDeviceList")}
                 activeOpacity={0.8}
               >
-                <View style={[styles.gridIcon, { backgroundColor: "#4338CA" }]}>
-                  <Ionicons name="hardware-chip" size={20} color="#818CF8" />
+                <View style={[styles.bentoIconWrap, { backgroundColor: "#EEF2FF" }]}>
+                  <Ionicons name="hardware-chip-outline" size={22} color="#4F46E5" />
                 </View>
-                <Text style={styles.gridTitle}>IoT</Text>
-                <Text style={styles.gridSub}>Devices</Text>
+                <Text style={styles.bentoTitle}>Thiết Bị</Text>
+                <Text style={styles.bentoSubtitle}>Camera ESP32</Text>
               </TouchableOpacity>
 
+              {/* Reports */}
               <TouchableOpacity
-                style={styles.gridCard}
+                style={styles.bentoCard}
                 onPress={() => navigation.navigate("Reports")}
                 activeOpacity={0.8}
               >
-                <View style={[styles.gridIcon, { backgroundColor: "#831843" }]}>
-                  <Ionicons name="document-text" size={20} color="#F472B6" />
+                <View style={[styles.bentoIconWrap, { backgroundColor: "#FFF1F2" }]}>
+                  <Ionicons name="document-text-outline" size={22} color="#E11D48" />
                 </View>
-                <Text style={styles.gridTitle}>Reports</Text>
-                <Text style={styles.gridSub}>Analytics + Export</Text>
+                <Text style={styles.bentoTitle}>Báo Cáo</Text>
+                <Text style={styles.bentoSubtitle}>Xuất Excel & PDF</Text>
               </TouchableOpacity>
             </Animated.View>
 
-            {/* Logout Card */}
-            <Animated.View entering={FadeInDown.delay(600).duration(600)}>
-              <TouchableOpacity style={styles.logoutCard} onPress={logout} activeOpacity={0.85}>
-                <View style={styles.logoutIcon}>
-                  <Ionicons name="log-out" size={20} color="#EF4444" />
+            {/* ─── Helpful Guide Tip ─── */}
+            <Animated.View entering={FadeInDown.delay(550).duration(600)}>
+              <View style={styles.helpfulCard}>
+                <View style={styles.helpfulIconWrap}>
+                  <Ionicons name="bulb-outline" size={20} color="#D97706" />
                 </View>
-                <View style={styles.logoutTextWrap}>
-                  <Text style={styles.logoutTitle}>Logout</Text>
-                  <Text style={styles.logoutSub}>Sign out securely</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#EF4444" />
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* Quick Tips Card */}
-            <Animated.View entering={FadeInDown.delay(650).duration(600)}>
-              <View style={styles.tipsCard}>
-                <View style={styles.tipsHeader}>
-                  <View style={styles.tipsIcon}>
-                    <Ionicons name="bulb-outline" size={18} color="#F59E0B" />
-                  </View>
-                  <Text style={styles.tipsTitle}>Quick Tips</Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <View style={styles.tipBullet} />
-                  <Text style={styles.tipText}>
-                    Use face recognition for faster attendance check-in
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <View style={styles.tipBullet} />
-                  <Text style={styles.tipText}>
-                    Create departments before adding production lines
-                  </Text>
-                </View>
-                <View style={styles.tipItem}>
-                  <View style={styles.tipBullet} />
-                  <Text style={styles.tipText}>
-                    Pull down to refresh on any list screen
+                <View style={styles.helpfulContent}>
+                  <Text style={styles.helpfulTitle}>Mẹo Sử Dụng</Text>
+                  <Text style={styles.helpfulDesc}>
+                    Chấm công khuôn mặt hoạt động tốt nhất khi camera được đặt ở độ cao 1.4m - 1.6m và đủ ánh sáng trực diện.
                   </Text>
                 </View>
               </View>
             </Animated.View>
 
+            {/* ─── Logout Button ─── */}
+            <Animated.View entering={FadeInDown.delay(600).duration(600)}>
+              <TouchableOpacity style={styles.logoutButton} onPress={logout} activeOpacity={0.85}>
+                <Ionicons name="log-out-outline" size={18} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text style={styles.logoutText}>Đăng xuất khỏi hệ thống</Text>
+              </TouchableOpacity>
+            </Animated.View>
+
             {/* Footer */}
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>HRMS Face Attendance v1.0</Text>
-              <Text style={styles.footerSub}>Smart Workforce Management</Text>
+            <View style={styles.footerWrap}>
+              <Text style={styles.footerBrand}>HRMS Face Attendance • v1.0.0</Text>
+              <Text style={styles.footerSubtitle}>Hệ thống chấm công khuôn mặt ESP32-CAM</Text>
             </View>
           </View>
         </ScrollView>
@@ -369,341 +413,423 @@ export function HomeScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0B0F19", // Solid deep dark background
+    backgroundColor: "#F8FAFC", // Ultra clean, modern off-white slate background
   },
   safeArea: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
+    paddingBottom: 28,
   },
 
-  // ─── Hero Card ───
-  heroCard: {
-    backgroundColor: "#111827",
+  // ─── Top Header ───
+  topHeader: {
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#1F2937",
+    borderBottomColor: "#F1F5F9",
   },
-  header: {
+  userBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
   },
-  headerLeft: {},
-  greetingText: {
-    color: "#94A3B8",
+  userTextGroup: {
+    flex: 1,
+    marginRight: 14,
+  },
+  greetingLabel: {
     fontSize: 13,
+    color: "#64748B",
     fontWeight: "500",
   },
-  userName: {
-    color: "#FFFFFF",
-    fontSize: 24,
+  userNameText: {
+    fontSize: 22,
     fontWeight: "800",
+    color: "#0F172A",
     marginTop: 2,
+    letterSpacing: -0.3,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    flexWrap: "wrap",
+    gap: 6,
   },
   roleBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#EFF6FF",
     borderWidth: 1,
-    borderColor: "#374151",
-    paddingHorizontal: 10,
+    borderColor: "#DBEAFE",
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-    marginTop: 6,
-    gap: 5,
+    borderRadius: 6,
+  },
+  roleDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#2563EB",
+    marginRight: 5,
   },
   roleText: {
-    color: "#38BDF8",
+    color: "#2563EB",
     fontSize: 11,
     fontWeight: "700",
-    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  profileButton: {
+  dateChipText: {
+    fontSize: 12,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  avatarButton: {
     position: "relative",
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#1F2937",
+  avatarContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#EFF6FF",
     borderWidth: 1.5,
-    borderColor: "#374151",
+    borderColor: "#DBEAFE",
     justifyContent: "center",
     alignItems: "center",
   },
-  onlineStatus: {
+  liveIndicator: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: -2,
+    right: -2,
     width: 12,
     height: 12,
     borderRadius: 6,
     backgroundColor: "#10B981",
     borderWidth: 2,
-    borderColor: "#111827",
-  },
-  dateBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 16,
-  },
-  dateText: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "500",
+    borderColor: "#FFFFFF",
   },
 
-  // ─── Metrics Row (2 solid cards) ───
-  metricsRow: {
-    flexDirection: "row",
-    gap: 12,
+  // ─── Main Content Canvas ───
+  content: {
+    paddingHorizontal: 18,
+    paddingTop: 16,
   },
-  metricCard: {
+
+  // ─── Spotlight Card (Face Attendance Hero) ───
+  heroCheckInCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#1E40AF", // Confident Solid Royal Blue
+    borderRadius: 20,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    marginBottom: 16,
+    shadowColor: "#1E40AF",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  heroLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1F2937",
-    borderWidth: 1,
-    borderColor: "#374151",
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  metricIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
     marginRight: 12,
   },
-  metricTextGroup: {
-    flex: 1,
-  },
-  metricValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#FFFFFF",
-  },
-  metricLabel: {
-    fontSize: 11,
-    color: "#94A3B8",
-    fontWeight: "600",
-    marginTop: 1,
-  },
-
-  // ─── Main Content ───
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 18,
-  },
-
-  // ─── Primary Action Cards ───
-  actionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#1F2937",
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  actionIconBox: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
+  heroScannerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
   },
-  actionTextBox: {
+  heroTextWrap: {
     flex: 1,
   },
-  actionTitle: {
+  heroBadge: {
+    backgroundColor: "#3B82F6",
+    alignSelf: "flex-start",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  heroBadgeText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  actionSubtitle: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  actionArrow: {
-    paddingLeft: 8,
-  },
-
-  // ─── Section Header ───
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 18,
-    marginBottom: 12,
-    gap: 8,
-  },
-  sectionTag: {
-    width: 4,
-    height: 16,
-    borderRadius: 2,
-    backgroundColor: "#6366F1",
-  },
-  sectionTitle: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: "800",
-    color: "#FFFFFF",
     letterSpacing: 0.8,
-    textTransform: "uppercase",
+  },
+  heroTitle: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  heroSubtitle: {
+    color: "#BFDBFE",
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  heroArrowBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
-  // ─── Grid (2x2 Cards) ───
-  gridRow: {
+  // ─── Stats Row ───
+  statsRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 14,
   },
-  gridCard: {
-    width: "48%",
-    backgroundColor: "#111827",
+  statCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#1F2937",
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    marginBottom: 12,
+    borderColor: "#E2E8F0",
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  checkInHighlightCard: {
-    borderColor: "#0284C7",
-    backgroundColor: "#0F1E36",
-  },
-  gridIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    justifyContent: "center",
+  statHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
   },
-  gridTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#FFFFFF",
+  statIconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  gridSub: {
+  statNumber: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.5,
+  },
+  statLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#334155",
+    marginTop: 2,
+  },
+  statFootnote: {
     fontSize: 11,
-    fontWeight: "500",
     color: "#94A3B8",
     marginTop: 2,
-    textAlign: "center",
   },
 
-  // ─── Logout Card ───
-  logoutCard: {
+  // ─── Quick Action Pill Row ───
+  quickActionRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 18,
+  },
+  actionPillCard: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.3)",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginTop: 6,
-    marginBottom: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  logoutIcon: {
+  actionPillIcon: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: "rgba(239, 68, 68, 0.15)",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
   },
-  logoutTextWrap: {
+  actionPillTextGroup: {
     flex: 1,
   },
-  logoutTitle: {
-    color: "#EF4444",
-    fontSize: 14,
+  actionPillTitle: {
+    fontSize: 13,
     fontWeight: "700",
+    color: "#0F172A",
   },
-  logoutSub: {
-    color: "#94A3B8",
+  actionPillSub: {
     fontSize: 11,
+    color: "#64748B",
     marginTop: 1,
   },
 
-  // ─── Quick Tips ───
-  tipsCard: {
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "#1F2937",
-    borderRadius: 16,
-    padding: 16,
-  },
-  tipsHeader: {
+  // ─── Section Header ───
+  sectionHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
-    gap: 8,
+    marginTop: 4,
   },
-  tipsIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: "rgba(245, 158, 11, 0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  tipsTitle: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  tipItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  tipBullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: "#38BDF8",
-    marginTop: 6,
+  sectionTag: {
+    width: 4,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: "#2563EB",
     marginRight: 8,
   },
-  tipText: {
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: 0.3,
+  },
+  counterBadge: {
+    marginLeft: 8,
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  counterText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#64748B",
+  },
+
+  // ─── Bento Grid ───
+  gridContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  bentoCard: {
+    width: "48%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#64748B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  bentoCardHighlight: {
+    borderColor: "#BFDBFE",
+    backgroundColor: "#F8FAFC",
+  },
+  bentoIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  bentoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  bentoSubtitle: {
+    fontSize: 11,
+    color: "#64748B",
+    marginTop: 3,
+  },
+
+  // ─── Helpful Card ───
+  helpfulCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFBEB",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+    marginBottom: 14,
+    alignItems: "flex-start",
+  },
+  helpfulIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#FEF3C7",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+    marginTop: 2,
+  },
+  helpfulContent: {
     flex: 1,
-    color: "#94A3B8",
+  },
+  helpfulTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#92400E",
+    marginBottom: 2,
+  },
+  helpfulDesc: {
     fontSize: 12,
-    lineHeight: 18,
+    color: "#B45309",
+    lineHeight: 17,
+  },
+
+  // ─── Logout ───
+  logoutButton: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FEE2E2",
+    borderRadius: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    marginBottom: 20,
+  },
+  logoutText: {
+    color: "#DC2626",
+    fontSize: 13,
+    fontWeight: "700",
   },
 
   // ─── Footer ───
-  footer: {
+  footerWrap: {
     alignItems: "center",
-    marginTop: 20,
-    paddingBottom: 8,
+    paddingBottom: 10,
   },
-  footerText: {
+  footerBrand: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#64748B",
+    color: "#94A3B8",
   },
-  footerSub: {
+  footerSubtitle: {
     fontSize: 11,
-    color: "#475569",
+    color: "#CBD5E1",
     marginTop: 2,
   },
 });

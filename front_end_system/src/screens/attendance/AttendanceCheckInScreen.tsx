@@ -12,10 +12,11 @@ import {
     Dimensions,
     Platform,
     ScrollView,
+    StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View
+    View,
 } from "react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -288,17 +289,18 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="dark-content" />
             <SafeAreaView style={styles.safeArea}>
                 {/* Header */}
-                <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
+                <Animated.View entering={FadeInUp.duration(500)} style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-                        <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+                        <Ionicons name="chevron-back" size={24} color="#0F172A" />
                     </TouchableOpacity>
 
                     <Text style={styles.headerTitle}>Điểm Danh Khuôn Mặt</Text>
 
                     <TouchableOpacity onPress={handleRefresh} style={styles.headerButton}>
-                        <Ionicons name="refresh" size={22} color="#FFFFFF" />
+                        <Ionicons name="refresh" size={20} color="#0F172A" />
                     </TouchableOpacity>
                 </Animated.View>
 
@@ -309,22 +311,22 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 >
                     {discovering ? (
                         <Animated.View entering={FadeInDown.duration(600)} style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" color="#38BDF8" />
+                            <ActivityIndicator size="large" color="#2563EB" />
                             <Text style={styles.loadingText}>Đang dò tìm camera ESP32...</Text>
                             <Text style={styles.loadingSubtext}>Vui lòng giữ kết nối Wi-Fi ổn định</Text>
                         </Animated.View>
                     ) : (
                         <>
-                            {/* Device Info Card */}
+                            {/* Device Info Card (Clean White) */}
                             <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.deviceCard}>
                                 <View style={styles.deviceInfoLeft}>
                                     <View style={styles.deviceIconWrapper}>
-                                        <Ionicons name="videocam" size={18} color="#FFFFFF" />
+                                        <Ionicons name="videocam" size={18} color="#2563EB" />
                                     </View>
                                     <View style={styles.deviceTextGroup}>
                                         <Text style={styles.deviceMainText}>ESP32-CAM Terminal</Text>
                                         <Text style={styles.deviceSubText}>
-                                            {cameraIP ? `IP: ${cameraIP}` : "Chưa kết nối camera"}
+                                            {cameraIP ? `Thiết bị IP: ${cameraIP}` : "Chưa kết nối camera"}
                                         </Text>
                                     </View>
                                 </View>
@@ -341,7 +343,12 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             cameraIP ? styles.statusDotActive : styles.statusDotInactive,
                                         ]}
                                     />
-                                    <Text style={styles.statusPillText}>
+                                    <Text
+                                        style={[
+                                            styles.statusPillText,
+                                            cameraIP ? styles.statusPillTextActive : styles.statusPillTextInactive,
+                                        ]}
+                                    >
                                         {cameraIP ? "Sẵn sàng" : "Mất kết nối"}
                                     </Text>
                                 </View>
@@ -397,19 +404,19 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                     </View>
                                 ) : (
                                     <View style={styles.noStreamContainer}>
-                                        <Ionicons name="videocam-off-outline" size={56} color="#FFFFFF" />
+                                        <Ionicons name="videocam-off-outline" size={52} color="#94A3B8" />
                                         <Text style={styles.noStreamTitle}>Không có tín hiệu camera</Text>
-                                        <Text style={styles.noStreamSub}>Vui lòng bật camera ESP32 và tải lại</Text>
+                                        <Text style={styles.noStreamSub}>Vui lòng kiểm tra kết nối thiết bị ESP32</Text>
                                     </View>
                                 )}
                             </Animated.View>
 
-                            {/* Last Check-in Success Result Card */}
+                            {/* Last Check-in Success Result Card (Clean Light Green) */}
                             {lastCheckIn && (
                                 <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.resultCard}>
                                     <View style={styles.resultHeader}>
                                         <View style={styles.resultBadge}>
-                                            <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                                            <Ionicons name="checkmark-circle" size={20} color="#059669" />
                                             <Text style={styles.resultBadgeText}>Kết Quả Điểm Danh Gần Nhất</Text>
                                         </View>
                                     </View>
@@ -417,9 +424,11 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                     <View style={styles.resultBody}>
                                         {/* Name Row */}
                                         <View style={styles.resultRowLarge}>
-                                            <Ionicons name="person-circle-outline" size={24} color="#38BDF8" />
+                                            <View style={styles.resultIconWrap}>
+                                                <Ionicons name="person" size={20} color="#2563EB" />
+                                            </View>
                                             <View style={styles.resultColLarge}>
-                                                <Text style={styles.resultLabelWhite}>Họ và tên</Text>
+                                                <Text style={styles.resultLabel}>Họ và tên nhân viên</Text>
                                                 <Text style={styles.resultValueName}>{lastCheckIn.name}</Text>
                                             </View>
                                         </View>
@@ -427,11 +436,8 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                         {/* Time & Confidence Row */}
                                         <View style={styles.resultRowSplit}>
                                             <View style={styles.resultSubCol}>
-                                                <View style={styles.resultSubLabelRow}>
-                                                    <Ionicons name="time-outline" size={15} color="#38BDF8" />
-                                                    <Text style={styles.resultLabelWhite}>Thời gian</Text>
-                                                </View>
-                                                <Text style={styles.resultValueWhite}>
+                                                <Text style={styles.resultLabel}>Thời gian</Text>
+                                                <Text style={styles.resultValueTime}>
                                                     {new Date(lastCheckIn.timestamp).toLocaleTimeString("vi-VN", {
                                                         hour: "2-digit",
                                                         minute: "2-digit",
@@ -444,11 +450,8 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             <View style={styles.resultDivider} />
 
                                             <View style={styles.resultSubCol}>
-                                                <View style={styles.resultSubLabelRow}>
-                                                    <Ionicons name="shield-checkmark-outline" size={15} color="#10B981" />
-                                                    <Text style={styles.resultLabelWhite}>Độ khớp</Text>
-                                                </View>
-                                                <Text style={styles.resultValueWhite}>
+                                                <Text style={styles.resultLabel}>Độ chính xác AI</Text>
+                                                <Text style={styles.resultValueConfidence}>
                                                     {lastCheckIn.confidence.toFixed(1)}%
                                                 </Text>
                                             </View>
@@ -457,24 +460,26 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                 </Animated.View>
                             )}
 
-                            {/* Guidelines Card (Replaces technical debug logs) */}
+                            {/* Guidelines Card (Clean Light Canvas) */}
                             <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.guidelinesCard}>
                                 <View style={styles.guidelinesHeader}>
-                                    <Ionicons name="scan-outline" size={18} color="#38BDF8" />
+                                    <View style={styles.guidelinesIconWrap}>
+                                        <Ionicons name="scan-outline" size={18} color="#2563EB" />
+                                    </View>
                                     <Text style={styles.guidelinesTitle}>Hướng Dẫn Chấm Công</Text>
                                 </View>
                                 <View style={styles.guidelinesList}>
                                     <View style={styles.guidelineRow}>
-                                        <Ionicons name="checkmark-outline" size={16} color="#38BDF8" style={{ marginTop: 2, marginRight: 8 }} />
-                                        <Text style={styles.guidelineText}>Giữ khuôn mặt thẳng hướng vào giữa khung hình.</Text>
+                                        <Ionicons name="checkmark-circle" size={16} color="#2563EB" style={{ marginTop: 2, marginRight: 8 }} />
+                                        <Text style={styles.guidelineText}>Giữ khuôn mặt thẳng hướng vào khung hình tròn.</Text>
                                     </View>
                                     <View style={styles.guidelineRow}>
-                                        <Ionicons name="checkmark-outline" size={16} color="#38BDF8" style={{ marginTop: 2, marginRight: 8 }} />
-                                        <Text style={styles.guidelineText}>Đảm bảo ánh sáng rõ ràng, tránh vị trí ngược sáng.</Text>
+                                        <Ionicons name="checkmark-circle" size={16} color="#2563EB" style={{ marginTop: 2, marginRight: 8 }} />
+                                        <Text style={styles.guidelineText}>Đảm bảo ánh sáng trực diện, tránh đứng ngược sáng.</Text>
                                     </View>
                                     <View style={styles.guidelineRow}>
-                                        <Ionicons name="checkmark-outline" size={16} color="#38BDF8" style={{ marginTop: 2, marginRight: 8 }} />
-                                        <Text style={styles.guidelineText}>Tháo khẩu trang hoặc kính râm khi thực hiện chụp.</Text>
+                                        <Ionicons name="checkmark-circle" size={16} color="#2563EB" style={{ marginTop: 2, marginRight: 8 }} />
+                                        <Text style={styles.guidelineText}>Tháo khẩu trang hoặc kính râm khi thực hiện quét.</Text>
                                     </View>
                                 </View>
                             </Animated.View>
@@ -492,12 +497,12 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                         ]}
                         onPress={handleCapture}
                         disabled={capturing || !cameraIP}
-                        activeOpacity={0.85}
+                        activeOpacity={0.88}
                     >
                         {capturing ? (
                             <View style={styles.buttonContent}>
                                 <ActivityIndicator color="#FFFFFF" size="small" style={{ marginRight: 10 }} />
-                                <Text style={styles.buttonText}>ĐANG XỬ LÝ NHẬN DIỆN...</Text>
+                                <Text style={styles.buttonText}>ĐANG NHẬN DIỆN KHUÔN MẶT...</Text>
                             </View>
                         ) : (
                             <View style={styles.buttonContent}>
@@ -524,7 +529,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#0B0F19",
+        backgroundColor: "#F8FAFC", // Clean light slate
     },
     safeArea: {
         flex: 1,
@@ -535,22 +540,22 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingHorizontal: 20,
         paddingVertical: 14,
+        backgroundColor: "#FFFFFF",
         borderBottomWidth: 1,
-        borderBottomColor: "rgba(255, 255, 255, 0.08)",
+        borderBottomColor: "#F1F5F9",
     },
     headerButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: "rgba(255, 255, 255, 0.1)",
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        backgroundColor: "#F1F5F9",
         alignItems: "center",
         justifyContent: "center",
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: "#FFFFFF",
-        letterSpacing: 0.3,
+        fontSize: 18,
+        fontWeight: "800",
+        color: "#0F172A",
     },
     scrollView: {
         flex: 1,
@@ -566,28 +571,32 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     loadingText: {
-        color: "#FFFFFF",
-        fontSize: 17,
+        color: "#0F172A",
+        fontSize: 16,
         fontWeight: "700",
-        marginTop: 18,
+        marginTop: 16,
     },
     loadingSubtext: {
-        color: "#FFFFFF",
-        opacity: 0.75,
+        color: "#64748B",
         fontSize: 13,
-        marginTop: 6,
+        marginTop: 4,
     },
     deviceCard: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: "rgba(255, 255, 255, 0.08)",
+        backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.15)",
+        borderColor: "#E2E8F0",
         borderRadius: 16,
         paddingVertical: 12,
         paddingHorizontal: 16,
-        marginBottom: 16,
+        marginBottom: 14,
+        shadowColor: "#64748B",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 1,
     },
     deviceInfoLeft: {
         flexDirection: "row",
@@ -596,8 +605,8 @@ const styles = StyleSheet.create({
     deviceIconWrapper: {
         width: 36,
         height: 36,
-        borderRadius: 18,
-        backgroundColor: "rgba(56, 189, 248, 0.2)",
+        borderRadius: 10,
+        backgroundColor: "#EFF6FF",
         alignItems: "center",
         justifyContent: "center",
         marginRight: 12,
@@ -606,64 +615,68 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     deviceMainText: {
-        color: "#FFFFFF",
-        fontSize: 15,
+        color: "#0F172A",
+        fontSize: 14,
         fontWeight: "700",
     },
     deviceSubText: {
-        color: "#FFFFFF",
-        opacity: 0.8,
+        color: "#64748B",
         fontSize: 12,
         marginTop: 2,
     },
     statusPill: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 12,
-        paddingVertical: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
         borderRadius: 20,
     },
     statusPillActive: {
-        backgroundColor: "rgba(16, 185, 129, 0.2)",
+        backgroundColor: "#ECFDF5",
         borderWidth: 1,
-        borderColor: "rgba(16, 185, 129, 0.5)",
+        borderColor: "#A7F3D0",
     },
     statusPillInactive: {
-        backgroundColor: "rgba(239, 68, 68, 0.2)",
+        backgroundColor: "#FEF2F2",
         borderWidth: 1,
-        borderColor: "rgba(239, 68, 68, 0.5)",
+        borderColor: "#FECACA",
     },
     statusDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 7,
+        height: 7,
+        borderRadius: 3.5,
         marginRight: 6,
     },
     statusDotActive: {
-        backgroundColor: "#10B981",
+        backgroundColor: "#059669",
     },
     statusDotInactive: {
-        backgroundColor: "#EF4444",
+        backgroundColor: "#DC2626",
     },
     statusPillText: {
-        color: "#FFFFFF",
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: "700",
+    },
+    statusPillTextActive: {
+        color: "#059669",
+    },
+    statusPillTextInactive: {
+        color: "#DC2626",
     },
     streamFrame: {
         width: "100%",
         aspectRatio: 4 / 3,
         borderRadius: 20,
         overflow: "hidden",
-        backgroundColor: "#000000",
+        backgroundColor: "#0F172A",
         borderWidth: 1.5,
-        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderColor: "#E2E8F0",
         marginBottom: 16,
-        elevation: 8,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
         shadowRadius: 10,
+        elevation: 4,
     },
     streamWrapper: {
         flex: 1,
@@ -675,8 +688,8 @@ const styles = StyleSheet.create({
     },
     cornerBracket: {
         position: "absolute",
-        width: 28,
-        height: 28,
+        width: 26,
+        height: 26,
         borderColor: "#38BDF8",
     },
     bracketTopLeft: {
@@ -715,7 +728,7 @@ const styles = StyleSheet.create({
         height: "68%",
         borderRadius: 999,
         borderWidth: 1.5,
-        borderColor: "rgba(56, 189, 248, 0.4)",
+        borderColor: "rgba(56, 189, 248, 0.5)",
         borderStyle: "dashed",
     },
     noStreamContainer: {
@@ -723,26 +736,31 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         padding: 20,
+        backgroundColor: "#F1F5F9",
     },
     noStreamTitle: {
-        color: "#FFFFFF",
-        fontSize: 16,
+        color: "#0F172A",
+        fontSize: 15,
         fontWeight: "700",
-        marginTop: 14,
+        marginTop: 12,
     },
     noStreamSub: {
-        color: "#FFFFFF",
-        opacity: 0.75,
-        fontSize: 13,
+        color: "#64748B",
+        fontSize: 12,
         marginTop: 4,
     },
     resultCard: {
-        backgroundColor: "rgba(16, 185, 129, 0.12)",
-        borderWidth: 1.5,
-        borderColor: "rgba(16, 185, 129, 0.4)",
+        backgroundColor: "#F0FDF4",
+        borderWidth: 1,
+        borderColor: "#BBF7D0",
         borderRadius: 18,
         padding: 16,
         marginBottom: 16,
+        shadowColor: "#059669",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+        elevation: 2,
     },
     resultHeader: {
         flexDirection: "row",
@@ -754,8 +772,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     resultBadgeText: {
-        color: "#FFFFFF",
-        fontSize: 15,
+        color: "#166534",
+        fontSize: 14,
         fontWeight: "800",
         marginLeft: 8,
     },
@@ -765,69 +783,95 @@ const styles = StyleSheet.create({
     resultRowLarge: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "rgba(255, 255, 255, 0.08)",
+        backgroundColor: "#FFFFFF",
         padding: 12,
         borderRadius: 14,
+        borderWidth: 1,
+        borderColor: "#DCFCE7",
+    },
+    resultIconWrap: {
+        width: 38,
+        height: 38,
+        borderRadius: 10,
+        backgroundColor: "#EFF6FF",
+        justifyContent: "center",
+        alignItems: "center",
     },
     resultColLarge: {
         marginLeft: 12,
         flex: 1,
     },
-    resultLabelWhite: {
-        color: "#FFFFFF",
-        opacity: 0.8,
-        fontSize: 12,
+    resultLabel: {
+        color: "#64748B",
+        fontSize: 11,
         fontWeight: "600",
     },
     resultValueName: {
-        color: "#FFFFFF",
-        fontSize: 18,
+        color: "#0F172A",
+        fontSize: 17,
         fontWeight: "800",
         marginTop: 2,
     },
     resultRowSplit: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "rgba(255, 255, 255, 0.08)",
+        backgroundColor: "#FFFFFF",
         padding: 12,
         borderRadius: 14,
+        borderWidth: 1,
+        borderColor: "#DCFCE7",
     },
     resultSubCol: {
         flex: 1,
     },
-    resultSubLabelRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 4,
-    },
-    resultValueWhite: {
-        color: "#FFFFFF",
+    resultValueTime: {
+        color: "#0F172A",
         fontSize: 15,
         fontWeight: "700",
+        marginTop: 2,
+    },
+    resultValueConfidence: {
+        color: "#059669",
+        fontSize: 15,
+        fontWeight: "800",
+        marginTop: 2,
     },
     resultDivider: {
         width: 1,
-        height: 32,
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
+        height: 28,
+        backgroundColor: "#DCFCE7",
         marginHorizontal: 12,
     },
     guidelinesCard: {
-        backgroundColor: "rgba(255, 255, 255, 0.07)",
+        backgroundColor: "#FFFFFF",
         borderWidth: 1,
-        borderColor: "rgba(255, 255, 255, 0.12)",
+        borderColor: "#E2E8F0",
         borderRadius: 18,
         padding: 16,
+        shadowColor: "#64748B",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 1,
     },
     guidelinesHeader: {
         flexDirection: "row",
         alignItems: "center",
         marginBottom: 10,
     },
+    guidelinesIconWrap: {
+        width: 30,
+        height: 30,
+        borderRadius: 8,
+        backgroundColor: "#EFF6FF",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 8,
+    },
     guidelinesTitle: {
-        color: "#FFFFFF",
-        fontSize: 15,
+        color: "#0F172A",
+        fontSize: 14,
         fontWeight: "700",
-        marginLeft: 8,
     },
     guidelinesList: {
         gap: 8,
@@ -837,30 +881,34 @@ const styles = StyleSheet.create({
         alignItems: "flex-start",
     },
     guidelineText: {
-        color: "#FFFFFF",
+        color: "#334155",
         fontSize: 13,
         lineHeight: 18,
         flex: 1,
-        opacity: 0.9,
     },
     bottomBar: {
         paddingHorizontal: 18,
         paddingVertical: 12,
-        backgroundColor: "#111827",
+        backgroundColor: "#FFFFFF",
         borderTopWidth: 1,
-        borderTopColor: "#1F2937",
+        borderTopColor: "#F1F5F9",
     },
     captureButton: {
-        height: 54,
+        height: 52,
         borderRadius: 14,
         justifyContent: "center",
         alignItems: "center",
+        shadowColor: "#2563EB",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 3,
     },
     captureButtonActive: {
-        backgroundColor: "#0284C7",
+        backgroundColor: "#2563EB",
     },
     captureButtonProcessing: {
-        backgroundColor: "#334155",
+        backgroundColor: "#94A3B8",
     },
     buttonContent: {
         flexDirection: "row",
@@ -872,7 +920,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: "#FFFFFF",
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: "800",
         letterSpacing: 0.5,
     },
