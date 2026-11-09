@@ -12,6 +12,7 @@ import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Dimensions,
+    Platform,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -128,38 +129,61 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             }
             addLog("Image downloaded successfully, preparing data...");
 
-            // Bước 2: Chuẩn bị FormData với file thực tế từ máy điện thoại
-            const formData = new FormData();
-            formData.append("File", {
-                uri: downloadResult.uri,
-                type: "image/jpeg",
-                name: "capture.jpg",
-            } as any);
-            formData.append("DeviceId", "ESP32-CAM-02");
-
-            // Bước 3: Gửi tới .NET backend thông qua API_BASE_URL đã được tự động nhận diện
+            // Bước 2: Chuẩn bị upload file từ native filesystem
+            // Dùng FileSystem.uploadAsync để tương thích hoàn toàn với React Native 0.88 & Expo 58 (tránh lỗi FormDataPart trên Android)
             const netUrl = `${API_BASE_URL}/Attendance/face-checkin`;
-
             addLog(`Sending image to backend: ${netUrl}`);
 
-            const attendanceResponse = await fetch(netUrl, {
-                method: "POST",
-                body: formData,
-                headers: {
-                    "Accept": "application/json",
-                },
-                signal: controller.signal
-            });
+            let recognitionData: any = null;
 
-            clearTimeout(timeoutId);
-            addLog(`Backend responded: ${attendanceResponse.status}`);
+            if (Platform.OS !== "web") {
+                const uploadResult = await FileSystem.uploadAsync(netUrl, downloadResult.uri, {
+                    fieldName: "File",
+                    httpMethod: "POST",
+                    uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+                    parameters: {
+                        DeviceId: "ESP32-CAM-02",
+                    },
+                    headers: {
+                        Accept: "application/json",
+                    },
+                });
 
-            if (!attendanceResponse.ok) {
-                const errorText = await attendanceResponse.text();
-                throw new Error(`Server error: ${attendanceResponse.status}`);
+                clearTimeout(timeoutId);
+                addLog(`Backend responded: ${uploadResult.status}`);
+
+                if (uploadResult.status < 200 || uploadResult.status >= 300) {
+                    throw new Error(`Server error: ${uploadResult.status}`);
+                }
+
+                recognitionData = JSON.parse(uploadResult.body);
+            } else {
+                const formData = new FormData();
+                formData.append("File", {
+                    uri: downloadResult.uri,
+                    type: "image/jpeg",
+                    name: "capture.jpg",
+                } as any);
+                formData.append("DeviceId", "ESP32-CAM-02");
+
+                const attendanceResponse = await fetch(netUrl, {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+                addLog(`Backend responded: ${attendanceResponse.status}`);
+
+                if (!attendanceResponse.ok) {
+                    throw new Error(`Server error: ${attendanceResponse.status}`);
+                }
+
+                recognitionData = await attendanceResponse.json();
             }
-
-            const recognitionData = await attendanceResponse.json();
 
             if (recognitionData && recognitionData.success) {
                 const { employeeName, confidence, checkInTime, status } = recognitionData;
