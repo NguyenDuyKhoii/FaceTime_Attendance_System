@@ -10,10 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 
-DB_PATH = "attendance.db"
-UPLOAD_DIR = "uploads"
-DATASET_DIR = "dataset"
-MODEL_PATH = "lbph_model.yml"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "attendance.db")
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+DATASET_DIR = os.path.join(BASE_DIR, "dataset")
+MODEL_PATH = os.path.join(BASE_DIR, "lbph_model.yml")
 
 # LBPH: confidence is "distance" (smaller is closer).
 # Increased threshold from 70 to 80 to be less strict
@@ -45,9 +46,10 @@ async def lifespan(app: FastAPI):
     
     # Restore camera IP if exists
     global CAMERA_IP
-    if os.path.exists("camera_ip.txt"):
+    camera_file = os.path.join(BASE_DIR, "camera_ip.txt")
+    if os.path.exists(camera_file):
         try:
-            with open("camera_ip.txt", "r") as f:
+            with open(camera_file, "r") as f:
                 CAMERA_IP = f.read().strip()
                 print(f"[STARTUP] Restored Camera IP: {CAMERA_IP}")
         except Exception as e:
@@ -276,7 +278,8 @@ async def register_camera(device_id: str = Form(...), ip_address: str = Form(...
     
     # Save to file so UDP broadcast can read it
     try:
-        with open("camera_ip.txt", "w") as f:
+        camera_file = os.path.join(BASE_DIR, "camera_ip.txt")
+        with open(camera_file, "w") as f:
             f.write(ip_address)
     except Exception as e:
         print(f"[CAMERA REGISTER] Error saving to file: {e}")
