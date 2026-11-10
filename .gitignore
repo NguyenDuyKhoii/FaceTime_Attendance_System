@@ -53,6 +53,7 @@ ai_attendance_server/uploads/
 ai_attendance_server/camera_ip.txt
 ai_attendance_server/dataset/
 ai_attendance_server/dataset_backup/
+ai_attendance_server/dataset_backup/
 *.pyc
 *.pyo
 *.pyd
