@@ -68,11 +68,23 @@ namespace Hrms.Application.Features.Auth.Commands
                 throw new UnauthorizedAccessException("Tên đăng nhập hoặc mật khẩu không đúng");
             }
 
-            // Lấy role (theo ERD: một user chỉ có một role)
-            var roleCode = user.Role.RoleCode;
+            // Lấy role (nạp cả RoleName lẫn RoleCode để tương thích mọi Authorize rule)
+            var roleList = new List<string>();
+            if (!string.IsNullOrWhiteSpace(user.Role?.RoleName))
+            {
+                roleList.Add(user.Role.RoleName); // e.g. "Admin"
+            }
+            if (!string.IsNullOrWhiteSpace(user.Role?.RoleCode) && !roleList.Contains(user.Role.RoleCode, StringComparer.OrdinalIgnoreCase))
+            {
+                roleList.Add(user.Role.RoleCode); // e.g. "ADMIN"
+            }
+            if (roleList.Count == 0)
+            {
+                roleList.Add("Employee");
+            }
 
             // Tạo JWT token
-            var token = _jwtService.GenerateToken(user, new List<string> { roleCode });
+            var token = _jwtService.GenerateToken(user, roleList);
 
             // Cập nhật LastLogin và reset LoginAttempts
             user.LastLogin = DateTime.UtcNow;
@@ -107,7 +119,7 @@ namespace Hrms.Application.Features.Auth.Commands
                 {
                     Id = user.Id,
                     Username = user.Username,
-                    Roles = new List<string> { roleCode }
+                    Roles = roleList
                 }
             };
         }
