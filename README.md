@@ -23,21 +23,19 @@
 
 <table>
   <tr>
-    <td width="65%" valign="top">
-      <h3>The Problem</h3>
-      <p>In factories and manufacturing facilities, employees work across distinct <b>production lines</b> and <b>rotating shifts</b>. Traditional attendance methods (paper logs, RFID cards, or shared fingerprint scanners) are prone to buddy-punching, queue bottlenecks, and workers checking in at the wrong production line or outside assigned schedules.</p>
-      <h3>The Solution</h3>
-      <p><b>FaceTime Attendance System</b> automates real-time attendance through camera kiosks using edge <b>ESP32-CAM</b> devices connected to a local facial recognition service and central HRMS backend. Every check-in and check-out verifies not just <i>who</i> the person is, but also <i>whether they are scanning at their assigned production line and within an active shift</i>—calculating exact working duration upon check-out.</p>
-      <h3>Key Capabilities</h3>
+    <td width="62%" valign="middle">
+      <p><b>The Problem:</b> Manufacturing facilities run across multiple <b>production lines</b> and <b>rotating shifts</b>. Traditional logs and card/fingerprint scanners suffer from buddy-punching, queue bottlenecks, and workers checking in at unauthorized lines or outside scheduled hours.</p>
+      <p><b>The Solution:</b> <b>FaceTime</b> automates contactless attendance via edge <b>ESP32-CAM</b> kiosks linked to a FastAPI vision server and .NET 8 HRMS backend—verifying <i>identity, assigned production line, and active shift</i> before logging attendance and computing exact working duration.</p>
+      <p><b>Key Capabilities:</b></p>
       <ul>
-        <li><b>Biometric Verification at Edge:</b> Low-cost, contactless facial recognition powered by ESP32-CAM and OpenCV LBPH.</li>
-        <li><b>Context-Aware Attendance Guardrails:</b> Enforces dual validation—<b>Production Line Isolation</b> and <b>Shift Window Validation</b>.</li>
-        <li><b>Real-Time Observability:</b> Instant attendance state synchronization and live notifications pushed to mobile dashboards via <b>SignalR WebSockets</b>.</li>
-        <li><b>Automated Payroll Metrics:</b> Tracks exact check-in/check-out timestamps and computes net working duration automatically.</li>
+        <li><b>Edge Biometrics:</b> Fast, contactless face recognition using ESP32-CAM & OpenCV LBPH.</li>
+        <li><b>Dual Guardrails:</b> Enforces strict <b>Production Line Isolation</b> & <b>Shift Window Validation</b>.</li>
+        <li><b>Real-Time Sync:</b> Pushes live check-in/out events to mobile dashboards via <b>SignalR</b>.</li>
+        <li><b>Automated Audit:</b> Calculates net working duration upon check-out automatically.</li>
       </ul>
     </td>
-    <td width="35%" align="center" valign="middle">
-      <img width="280" alt="ESP32-CAM Hardware Terminal" src="https://github.com/user-attachments/assets/10dc6242-9838-4013-98e5-ea1b25a5d667" />
+    <td width="38%" align="center" valign="middle">
+      <img width="320" alt="ESP32-CAM Hardware Terminal" src="https://github.com/user-attachments/assets/601a3504-40bf-4df3-88c9-16ac18895d79" />
       <br>
       <sub><b>ESP32-CAM Edge Kiosk Terminal</b><br><i>Production Line Scanning Unit</i></sub>
     </td>
