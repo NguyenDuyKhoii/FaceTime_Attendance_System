@@ -21,13 +21,56 @@ import {
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import CustomAlert from "../../components/CustomAlert";
+import CustomAlert, { CustomAlertDetailItem } from "../../components/CustomAlert";
 import { AuthStackParamList } from "../../types/AuthParam";
 import { API_BASE_URL } from "../../utils/constants";
 
 const { width } = Dimensions.get("window");
 
 type Props = NativeStackScreenProps<AuthStackParamList, "AttendanceCheckIn">;
+
+const formatTime = (value?: string | null): string => {
+    if (!value) return "--:--:--";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "--:--:--";
+    return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+    });
+};
+
+const formatWorkingDuration = (
+    checkInValue?: string | null,
+    checkOutValue?: string | null,
+    workingSecondsFromServer?: number | null
+): string => {
+    let totalSeconds: number | null = null;
+    if (typeof workingSecondsFromServer === "number" && !Number.isNaN(workingSecondsFromServer)) {
+        totalSeconds = Math.max(0, Math.round(workingSecondsFromServer));
+    } else if (checkInValue && checkOutValue) {
+        const startMs = new Date(checkInValue).getTime();
+        const endMs = new Date(checkOutValue).getTime();
+        if (!Number.isNaN(startMs) && !Number.isNaN(endMs)) {
+            totalSeconds = Math.max(0, Math.round((endMs - startMs) / 1000));
+        }
+    }
+
+    if (totalSeconds === null) return "N/A";
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
+    }
+    if (minutes > 0) {
+        return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+    }
+    return `${seconds}s`;
+};
 
 export default function AttendanceCheckInScreen({ navigation }: Props) {
     const [cameraIP, setCameraIP] = useState<string>("");
@@ -39,15 +82,37 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
     const [alert, setAlert] = useState({
         visible: false,
         title: "",
+        subtitle: "",
         message: "",
+        details: [] as CustomAlertDetailItem[],
+        large: false,
         type: "info" as "success" | "error" | "info",
         onConfirm: undefined as (() => void) | undefined,
     });
 
+    const showSimpleAlert = (
+        title: string,
+        message: string,
+        type: "success" | "error" | "info" = "info"
+    ) => {
+        setAlert({
+            visible: true,
+            title,
+            subtitle: "",
+            message,
+            details: [],
+            large: false,
+            type,
+            onConfirm: undefined,
+        });
+    };
+
     const [lastCheckIn, setLastCheckIn] = useState<{
         name: string;
         timestamp: string;
-        confidence: number;
+        checkInTime?: string;
+        checkOutTime?: string;
+        workingDuration?: string;
         status?: string;
     } | null>(null);
 
@@ -84,13 +149,11 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
 
     const handleCapture = async () => {
         if (!cameraIP) {
-            setAlert({
-                visible: true,
-                title: "Camera Not Found",
-                message: "No ESP32-CAM detected. Please make sure the camera is powered on and connected to the same Wi-Fi network.",
-                type: "error",
-                onConfirm: undefined,
-            });
+            showSimpleAlert(
+                "Camera Not Found",
+                "No ESP32-CAM detected. Please make sure the camera is powered on and connected to the same Wi-Fi network.",
+                "error"
+            );
             return;
         }
 
@@ -164,43 +227,92 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             }
 
             if (recognitionData && recognitionData.success) {
-                const { employeeName, confidence, checkInTime, status } = recognitionData;
-
-                setLastCheckIn({
-                    name: employeeName || "Unknown Employee",
-                    timestamp: checkInTime || new Date().toISOString(),
-                    confidence: confidence || 0,
-                    status: status || "CheckedIn",
-                });
-
-                const formattedTime = new Date(checkInTime).toLocaleString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                    hour12: true,
-                });
+                const {
+                    employeeName,
+                    checkInTime,
+                    checkInAt,
+                    checkOutTime,
+                    workingSeconds,
+                    status,
+                } = recognitionData;
 
                 if (status === "CheckedIn") {
+                    const resolvedCheckIn = checkInAt || checkInTime || new Date().toISOString();
+
+                    setLastCheckIn({
+                        name: employeeName || "Unknown Employee",
+                        timestamp: resolvedCheckIn,
+                        checkInTime: resolvedCheckIn,
+                        status: "CheckedIn",
+                    });
+
                     setAlert({
                         visible: true,
                         title: `Welcome, ${employeeName}! 👋`,
-                        message: `Check-in successful!\n\nTime: ${formattedTime}\nAI Confidence: ${confidence?.toFixed(1)}%`,
+                        subtitle: "Check-in successful!",
+                        message: "",
+                        details: [
+                            { label: "Check-in Time", value: formatTime(resolvedCheckIn) },
+                        ],
+                        large: true,
                         type: "success",
                         onConfirm: undefined,
                     });
                 } else if (status === "CheckedOut") {
+                    const resolvedCheckOut = checkOutTime || checkInTime || new Date().toISOString();
+                    const resolvedCheckIn =
+                        checkInAt ||
+                        (lastCheckIn?.status === "CheckedIn" && lastCheckIn.name === employeeName
+                            ? lastCheckIn.checkInTime || lastCheckIn.timestamp
+                            : undefined);
+                    const workingDuration = formatWorkingDuration(
+                        resolvedCheckIn,
+                        resolvedCheckOut,
+                        workingSeconds
+                    );
+
+                    setLastCheckIn({
+                        name: employeeName || "Unknown Employee",
+                        timestamp: resolvedCheckOut,
+                        checkInTime: resolvedCheckIn,
+                        checkOutTime: resolvedCheckOut,
+                        workingDuration,
+                        status: "CheckedOut",
+                    });
+
                     setAlert({
                         visible: true,
                         title: `Goodbye, ${employeeName}! 👋`,
-                        message: `Check-out successful!\n\nTime: ${formattedTime}\nAI Confidence: ${confidence?.toFixed(1)}%\n\nHave a great rest of your day!`,
+                        subtitle: "Check-out successful!",
+                        message: "Have a great rest of your day!",
+                        details: [
+                            ...(resolvedCheckIn
+                                ? [{ label: "Check-in Time", value: formatTime(resolvedCheckIn) }]
+                                : []),
+                            { label: "Check-out Time", value: formatTime(resolvedCheckOut) },
+                            { label: "Working Time", value: workingDuration, highlight: true },
+                        ],
+                        large: true,
                         type: "success",
                         onConfirm: undefined,
                     });
                 } else {
+                    const resolvedTime = checkInTime || new Date().toISOString();
+
+                    setLastCheckIn({
+                        name: employeeName || "Unknown Employee",
+                        timestamp: resolvedTime,
+                        checkInTime: resolvedTime,
+                        status: status || "Processed",
+                    });
+
                     setAlert({
                         visible: true,
                         title: recognitionData.message || "Attendance Processed",
-                        message: `Status: ${status}\nConfidence: ${confidence?.toFixed(1)}%`,
+                        subtitle: "",
+                        message: `Status: ${status}`,
+                        details: [{ label: "Time", value: formatTime(resolvedTime) }],
+                        large: true,
                         type: "info",
                         onConfirm: undefined,
                     });
@@ -209,53 +321,41 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 const { status, message } = recognitionData;
 
                 if (status === "UnknownFace") {
-                    setAlert({
-                        visible: true,
-                        title: "Face Not Recognized",
-                        message: "Face was not found in the staff registry or the image was blurry. Please try again.",
-                        type: "error",
-                        onConfirm: undefined,
-                    });
+                    showSimpleAlert(
+                        "Face Not Recognized",
+                        "Face was not found in the staff registry or the image was blurry. Please try again.",
+                        "error"
+                    );
                 } else if (status === "AlreadyCheckedOut") {
-                    setAlert({
-                        visible: true,
-                        title: "Shift Completed",
-                        message: "You have already completed check-out for today.",
-                        type: "info",
-                        onConfirm: undefined,
-                    });
+                    showSimpleAlert(
+                        "Shift Completed",
+                        "You have already completed check-out for today.",
+                        "info"
+                    );
                 } else if (status === "NoShiftToday") {
-                    setAlert({
-                        visible: true,
-                        title: "No Shift Assigned",
-                        message: "You do not have any work shift assigned for today.",
-                        type: "error",
-                        onConfirm: undefined,
-                    });
+                    showSimpleAlert(
+                        "No Shift Assigned",
+                        "You do not have any work shift assigned for today.",
+                        "error"
+                    );
                 } else if (status === "WrongShiftTime") {
-                    setAlert({
-                        visible: true,
-                        title: "Shift Not Started",
-                        message: "It is not yet time for your assigned work shift.",
-                        type: "error",
-                        onConfirm: undefined,
-                    });
-                } else if (status === "WrongProductionLine") {
-                    setAlert({
-                        visible: true,
-                        title: "Wrong Workstation",
-                        message: "You are checking in at the wrong production line.",
-                        type: "error",
-                        onConfirm: undefined,
-                    });
+                    showSimpleAlert(
+                        "Shift Not Started",
+                        "It is not yet time for your assigned work shift.",
+                        "error"
+                    );
+                } else if (status === "WrongProductionLine" || status === "WrongLocation") {
+                    showSimpleAlert(
+                        "Wrong Workstation",
+                        "You are checking in at the wrong production line.",
+                        "error"
+                    );
                 } else {
-                    setAlert({
-                        visible: true,
-                        title: "Processing Failed",
-                        message: message || "Could not process attendance data. Please try again.",
-                        type: "error",
-                        onConfirm: undefined,
-                    });
+                    showSimpleAlert(
+                        "Processing Failed",
+                        message || "Could not process attendance data. Please try again.",
+                        "error"
+                    );
                 }
             }
         } catch (error: any) {
@@ -270,13 +370,11 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                 errorMessage = "The server did not respond in time (exceeded 25 seconds). Please try again.";
             }
 
-            setAlert({
-                visible: true,
-                title: errorTitle,
-                message: `${errorMessage}\n\nPlease verify your Wi-Fi network connection.`,
-                type: "error",
-                onConfirm: undefined,
-            });
+            showSimpleAlert(
+                errorTitle,
+                `${errorMessage}\n\nPlease verify your Wi-Fi network connection.`,
+                "error"
+            );
         } finally {
             setCapturing(false);
         }
@@ -383,13 +481,11 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             originWhitelist={["*"]}
                                             allowsInlineMediaPlayback={true}
                                             onError={() => {
-                                                setAlert({
-                                                    visible: true,
-                                                    title: "Stream Connection Error",
-                                                    message: "Failed to display live video stream. Please check camera power and network.",
-                                                    type: "error",
-                                                    onConfirm: undefined,
-                                                });
+                                                showSimpleAlert(
+                                                    "Stream Connection Error",
+                                                    "Failed to display live video stream. Please check camera power and network.",
+                                                    "error"
+                                                );
                                             }}
                                         />
 
@@ -411,13 +507,17 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                 )}
                             </Animated.View>
 
-                            {/* Last Check-in Success Result Card (Clean Light Green) */}
+                            {/* Last Check-in / Check-out Result Card (Clean Light Green) */}
                             {lastCheckIn && (
                                 <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.resultCard}>
                                     <View style={styles.resultHeader}>
                                         <View style={styles.resultBadge}>
-                                            <Ionicons name="checkmark-circle" size={22} color="#059669" />
-                                            <Text style={styles.resultBadgeText}>Latest Check-in Result</Text>
+                                            <Ionicons name="checkmark-circle" size={24} color="#059669" />
+                                            <Text style={styles.resultBadgeText}>
+                                                {lastCheckIn.status === "CheckedOut"
+                                                    ? "Latest Check-out Result"
+                                                    : "Latest Check-in Result"}
+                                            </Text>
                                         </View>
                                     </View>
 
@@ -425,7 +525,7 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                         {/* Name Row */}
                                         <View style={styles.resultRowLarge}>
                                             <View style={styles.resultIconWrap}>
-                                                <Ionicons name="person" size={22} color="#2563EB" />
+                                                <Ionicons name="person" size={24} color="#2563EB" />
                                             </View>
                                             <View style={styles.resultColLarge}>
                                                 <Text style={styles.resultLabel}>Employee Name</Text>
@@ -433,29 +533,51 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
                                             </View>
                                         </View>
 
-                                        {/* Time & Confidence Row */}
-                                        <View style={styles.resultRowSplit}>
-                                            <View style={styles.resultSubCol}>
-                                                <Text style={styles.resultLabel}>Timestamp</Text>
-                                                <Text style={styles.resultValueTime}>
-                                                    {new Date(lastCheckIn.timestamp).toLocaleTimeString("en-US", {
-                                                        hour: "2-digit",
-                                                        minute: "2-digit",
-                                                        second: "2-digit",
-                                                        hour12: true,
-                                                    })}
-                                                </Text>
-                                            </View>
+                                        {lastCheckIn.status === "CheckedOut" ? (
+                                            <>
+                                                <View style={styles.resultRowSplit}>
+                                                    <View style={styles.resultSubCol}>
+                                                        <Text style={styles.resultLabel}>Check-in Time</Text>
+                                                        <Text style={styles.resultValueSplitTime}>
+                                                            {formatTime(lastCheckIn.checkInTime)}
+                                                        </Text>
+                                                    </View>
 
-                                            <View style={styles.resultDivider} />
+                                                    <View style={styles.resultDivider} />
 
-                                            <View style={styles.resultSubCol}>
-                                                <Text style={styles.resultLabel}>AI Confidence</Text>
-                                                <Text style={styles.resultValueConfidence}>
-                                                    {lastCheckIn.confidence.toFixed(1)}%
-                                                </Text>
+                                                    <View style={styles.resultSubCol}>
+                                                        <Text style={styles.resultLabel}>Check-out Time</Text>
+                                                        <Text style={styles.resultValueSplitTime}>
+                                                            {formatTime(lastCheckIn.checkOutTime || lastCheckIn.timestamp)}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+
+                                                <View style={styles.resultRowDuration}>
+                                                    <View style={styles.resultDurationIconWrap}>
+                                                        <Ionicons name="time-outline" size={24} color="#059669" />
+                                                    </View>
+                                                    <View style={styles.resultColLarge}>
+                                                        <Text style={styles.resultDurationLabel}>Working Time</Text>
+                                                        <Text style={styles.resultValueDuration}>
+                                                            {lastCheckIn.workingDuration || "N/A"}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                            </>
+                                        ) : (
+                                            <View style={styles.resultRowLarge}>
+                                                <View style={styles.resultIconWrap}>
+                                                    <Ionicons name="time-outline" size={24} color="#059669" />
+                                                </View>
+                                                <View style={styles.resultColLarge}>
+                                                    <Text style={styles.resultLabel}>Check-in Time</Text>
+                                                    <Text style={styles.resultValueTime}>
+                                                        {formatTime(lastCheckIn.checkInTime || lastCheckIn.timestamp)}
+                                                    </Text>
+                                                </View>
                                             </View>
-                                        </View>
+                                        )}
                                     </View>
                                 </Animated.View>
                             )}
@@ -517,7 +639,10 @@ export default function AttendanceCheckInScreen({ navigation }: Props) {
             <CustomAlert
                 visible={alert.visible}
                 title={alert.title}
+                subtitle={alert.subtitle}
                 message={alert.message}
+                details={alert.details}
+                large={alert.large}
                 type={alert.type}
                 onClose={() => setAlert({ ...alert, visible: false })}
                 onConfirm={alert.onConfirm}
@@ -774,7 +899,7 @@ const styles = StyleSheet.create({
     },
     resultBadgeText: {
         color: "#166534",
-        fontSize: 15,
+        fontSize: 17,
         fontWeight: "800",
         marginLeft: 8,
     },
@@ -785,16 +910,24 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#FFFFFF",
-        padding: 14,
+        padding: 16,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: "#DCFCE7",
     },
     resultIconWrap: {
-        width: 42,
-        height: 42,
+        width: 46,
+        height: 46,
         borderRadius: 12,
         backgroundColor: "#EFF6FF",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    resultDurationIconWrap: {
+        width: 46,
+        height: 46,
+        borderRadius: 12,
+        backgroundColor: "#D1FAE5",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -804,12 +937,12 @@ const styles = StyleSheet.create({
     },
     resultLabel: {
         color: "#64748B",
-        fontSize: 12.5,
+        fontSize: 14.5,
         fontWeight: "600",
     },
     resultValueName: {
         color: "#0F172A",
-        fontSize: 19,
+        fontSize: 22,
         fontWeight: "800",
         marginTop: 2,
     },
@@ -817,7 +950,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         backgroundColor: "#FFFFFF",
-        padding: 14,
+        padding: 16,
         borderRadius: 16,
         borderWidth: 1,
         borderColor: "#DCFCE7",
@@ -827,19 +960,39 @@ const styles = StyleSheet.create({
     },
     resultValueTime: {
         color: "#0F172A",
-        fontSize: 16,
-        fontWeight: "700",
+        fontSize: 21,
+        fontWeight: "800",
         marginTop: 2,
     },
-    resultValueConfidence: {
+    resultValueSplitTime: {
+        color: "#0F172A",
+        fontSize: 18,
+        fontWeight: "800",
+        marginTop: 2,
+    },
+    resultRowDuration: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#ECFDF5",
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1.5,
+        borderColor: "#A7F3D0",
+    },
+    resultDurationLabel: {
+        color: "#047857",
+        fontSize: 14.5,
+        fontWeight: "700",
+    },
+    resultValueDuration: {
         color: "#059669",
-        fontSize: 17,
+        fontSize: 22,
         fontWeight: "800",
         marginTop: 2,
     },
     resultDivider: {
         width: 1,
-        height: 30,
+        height: 36,
         backgroundColor: "#DCFCE7",
         marginHorizontal: 14,
     },

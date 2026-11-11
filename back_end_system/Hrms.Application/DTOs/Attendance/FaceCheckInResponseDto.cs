@@ -21,9 +21,29 @@ namespace Hrms.Application.DTOs.Attendance
         public string? EmployeeName { get; set; }
 
         /// <summary>
-        /// Thời gian check-in (nếu thành công)
+        /// Thời gian check-in (hoặc thời gian check-out khi vừa checkout - giữ để tương thích ngược)
         /// </summary>
         public DateTime? CheckInTime { get; set; }
+
+        /// <summary>
+        /// Thời gian check-in thực tế (UTC)
+        /// </summary>
+        public DateTime? CheckInAt { get; set; }
+
+        /// <summary>
+        /// Thời gian check-out (UTC, nếu vừa check-out)
+        /// </summary>
+        public DateTime? CheckOutTime { get; set; }
+
+        /// <summary>
+        /// Tổng số giờ làm việc (nếu vừa check-out)
+        /// </summary>
+        public double? TotalHours { get; set; }
+
+        /// <summary>
+        /// Tổng số giây làm việc từ lúc check-in đến check-out
+        /// </summary>
+        public double? WorkingSeconds { get; set; }
 
         /// <summary>
         /// Trạng thái chi tiết: "CheckedIn", "AlreadyCheckedIn", "CheckedOut", "Failed", "UnknownFace", "NoShiftToday", "WrongShiftTime", "WrongLocation"

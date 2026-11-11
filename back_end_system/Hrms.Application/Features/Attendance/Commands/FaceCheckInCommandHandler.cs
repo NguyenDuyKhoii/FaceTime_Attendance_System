@@ -289,12 +289,17 @@ namespace Hrms.Application.Features.Attendance.Commands
                     {
                         // Chưa check-out, thực hiện check-out
                         existingRecord.CheckOutTime = request.CapturedAt;
-                        
-                        // Tính total hours
+
+                        double? workingSeconds = null;
+                        DateTime? checkInAtUtc = null;
+                        // Tính total hours từ thời điểm check-in đến check-out
                         if (existingRecord.CheckInTime.HasValue)
                         {
-                            var totalMinutes = (existingRecord.CheckOutTime.Value - existingRecord.CheckInTime.Value).TotalMinutes;
-                            existingRecord.TotalHours = totalMinutes / 60.0;
+                            checkInAtUtc = DateTime.SpecifyKind(existingRecord.CheckInTime.Value, DateTimeKind.Utc);
+                            var elapsed = existingRecord.CheckOutTime.Value - checkInAtUtc.Value;
+                            if (elapsed.TotalSeconds < 0) elapsed = TimeSpan.Zero;
+                            workingSeconds = elapsed.TotalSeconds;
+                            existingRecord.TotalHours = elapsed.TotalHours;
                         }
 
                         // Kiểm tra early leave nếu có shift (đã lấy ở trên)
@@ -327,6 +332,10 @@ namespace Hrms.Application.Features.Attendance.Commands
                             Message = $"Check-out thành công lúc {now:HH:mm}",
                             EmployeeName = employee.FullName,
                             CheckInTime = existingRecord.CheckOutTime,
+                            CheckInAt = checkInAtUtc,
+                            CheckOutTime = existingRecord.CheckOutTime,
+                            TotalHours = existingRecord.TotalHours,
+                            WorkingSeconds = workingSeconds,
                             Status = "CheckedOut",
                             Confidence = recognizeResult.Confidence
                         };
@@ -377,6 +386,7 @@ namespace Hrms.Application.Features.Attendance.Commands
                     Message = $"Check-in thành công lúc {now:HH:mm}",
                     EmployeeName = employee.FullName,
                     CheckInTime = newRecord.CheckInTime,
+                    CheckInAt = newRecord.CheckInTime,
                     Status = "CheckedIn",
                     Confidence = recognizeResult.Confidence
                 };
