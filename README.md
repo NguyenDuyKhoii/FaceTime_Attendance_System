@@ -38,7 +38,8 @@ https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
 ### 2. Shift Creation & Assignment
 Create a work shift schedule and assign it to the newly registered employee.
 
-[Watch clip (`demo/create_shift_and_assign_employee.mp4`)](demo/create_shift_and_assign_employee.mp4)
+https://github.com/user-attachments/assets/5185ddd1-c853-43e1-821e-da2b7d0d39b6
+
 
 ### 3. Happy Path — Face Check-In, Check-Out & Working Duration
 Employee completes face check-in via ESP32-CAM, then checks out to receive the calculated total working duration.
