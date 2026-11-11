@@ -44,14 +44,16 @@ https://github.com/user-attachments/assets/5185ddd1-c853-43e1-821e-da2b7d0d39b6
 ### 3. Happy Path — Face Check-In, Check-Out & Working Duration
 Employee completes face check-in via ESP32-CAM, then checks out to receive the calculated total working duration.
 
-[Watch clip (`demo/tracking_employee_attendance.mp4`)](demo/tracking_employee_attendance.mp4)
+https://github.com/user-attachments/assets/6dcb5812-170f-4c4b-8d69-1599643b9dbd
 
 ### 4. Unhappy Case 1 — Wrong Production Line
 Employee attempts to check in at an IoT camera assigned to a different production line; the system rejects the scan with a mismatch notice.
 
-[Watch clip (`demo/handle_unexpected_productline.mp4`)](demo/handle_unexpected_productline.mp4)
+https://github.com/user-attachments/assets/68dce3a3-ba6f-433f-b1c5-bdf3f61e739a
 
 ### 5. Unhappy Case 2 — No Shift Assigned Today
 Employee scans their face on a day with no assigned work shift; the system blocks attendance outside valid schedules.
 
-[Watch clip (`demo/handle_unexpected_shift.mp4`)](demo/handle_unexpected_shift.mp4)
+
+https://github.com/user-attachments/assets/77bcfb08-d1e3-4ab6-8cc0-520dd2279feb
+
