@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sqlite3
 import base64
@@ -9,6 +10,8 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+
+from camera_discovery import discover_camera_ip, is_esp32_camera, write_camera_ip_file
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "attendance.db")
@@ -36,6 +39,37 @@ def get_recognizer():
             print(f"[STARTUP] Model loaded from {MODEL_PATH}")
     return _RECOGNIZER
 
+def refresh_camera_ip(force_scan: bool = False) -> str:
+    """Verify the cached camera IP or scan the local LAN subnet for an ESP32-CAM."""
+    global CAMERA_IP
+    if not force_scan and CAMERA_IP and is_esp32_camera(CAMERA_IP, tcp_timeout=0.6, http_timeout=1.0):
+        return CAMERA_IP
+
+    discovered = discover_camera_ip(preferred_ip="" if force_scan else CAMERA_IP)
+    if discovered != CAMERA_IP:
+        if discovered:
+            print(f"[CAMERA DISCOVERY] Found ESP32-CAM at: {discovered}")
+        elif CAMERA_IP:
+            print(f"[CAMERA DISCOVERY] Lost connection to previous camera IP: {CAMERA_IP}")
+    CAMERA_IP = discovered
+    return CAMERA_IP
+
+
+async def _camera_watch_loop(stop_event: asyncio.Event, interval_seconds: float = 10.0):
+    """Keep CAMERA_IP synchronized in the background if the camera boots late or gets a new IP."""
+    timeout = 0.0  # Scan immediately in background right after server boot
+    while not stop_event.is_set():
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=timeout)
+            break
+        except asyncio.TimeoutError:
+            timeout = interval_seconds
+            try:
+                await asyncio.to_thread(refresh_camera_ip)
+            except Exception as e:
+                print(f"[CAMERA DISCOVERY] Background watch error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
@@ -43,19 +77,14 @@ async def lifespan(app: FastAPI):
     os.makedirs(DATASET_DIR, exist_ok=True)
     init_db()
     get_recognizer() # Pre-load AI model
-    
-    # Restore camera IP if exists
-    global CAMERA_IP
-    camera_file = os.path.join(BASE_DIR, "camera_ip.txt")
-    if os.path.exists(camera_file):
-        try:
-            with open(camera_file, "r") as f:
-                CAMERA_IP = f.read().strip()
-                print(f"[STARTUP] Restored Camera IP: {CAMERA_IP}")
-        except Exception as e:
-            print(f"[STARTUP] Error reading camera_ip.txt: {e}")
-            
-    yield
+
+    stop_event = asyncio.Event()
+    watch_task = asyncio.create_task(_camera_watch_loop(stop_event))
+    try:
+        yield
+    finally:
+        stop_event.set()
+        await watch_task
 
 app = FastAPI(lifespan=lifespan)
 
@@ -274,25 +303,24 @@ def get_images(person_id: str):
 async def register_camera(device_id: str = Form(...), ip_address: str = Form(...)):
     """Endpoint for ESP32 camera to register its IP address"""
     global CAMERA_IP
-    CAMERA_IP = ip_address
-    
+    CAMERA_IP = ip_address.strip()
+
     # Save to file so UDP broadcast can read it
     try:
-        camera_file = os.path.join(BASE_DIR, "camera_ip.txt")
-        with open(camera_file, "w") as f:
-            f.write(ip_address)
+        write_camera_ip_file(CAMERA_IP)
     except Exception as e:
         print(f"[CAMERA REGISTER] Error saving to file: {e}")
-    
-    print(f"[CAMERA REGISTER] Device: {device_id}, IP: {ip_address}")
+
+    print(f"[CAMERA REGISTER] Device: {device_id}, IP: {CAMERA_IP}")
     return JSONResponse({
         "ok": True,
         "message": "Camera registered successfully",
         "device_id": device_id,
-        "ip_address": ip_address
+        "ip_address": CAMERA_IP
     })
 
 @app.get("/api/camera/ip")
-async def get_registered_camera_ip():
-    """Retrieve the currently registered camera IP"""
-    return {"ok": True, "ip": CAMERA_IP}
+async def get_registered_camera_ip(rescan: bool = False):
+    """Retrieve the active camera IP, scanning the local subnet if needed."""
+    ip = await asyncio.to_thread(refresh_camera_ip, rescan)
+    return {"ok": True, "ip": ip}
