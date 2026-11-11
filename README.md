@@ -33,6 +33,9 @@ FaceTime automates real-time attendance through camera kiosks using edge **ESP32
 ### 1. Employee Account Registration & Face Enrollment
 Create an employee account/profile and enroll facial training samples into the AI recognition model.
 
+https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
+
+
 [Watch clip (`demo/register_employee_and_face.mp4`)](demo/register_employee_and_face.mp4)
 
 ### 2. Shift Creation & Assignment
