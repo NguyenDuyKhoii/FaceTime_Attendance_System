@@ -19,25 +19,27 @@
 
 ---
 
-## 📖 Overview & Hardware Prototype
+## Overview & Hardware Prototype
 
 <table>
   <tr>
-    <td width="62%" valign="middle">
-      <p><b>The Problem:</b> Manufacturing facilities run across multiple <b>production lines</b> and <b>rotating shifts</b>. Traditional logs and card/fingerprint scanners suffer from buddy-punching, queue bottlenecks, and workers checking in at unauthorized lines or outside scheduled hours.</p>
-      <p><b>The Solution:</b> <b>FaceTime</b> automates contactless attendance via edge <b>ESP32-CAM</b> kiosks linked to a FastAPI vision server and .NET 8 HRMS backend—verifying <i>identity, assigned production line, and active shift</i> before logging attendance and computing exact working duration.</p>
+    <td width="60%" valign="middle">
+      <p><b>The Problem:</b><br>
+      In factories and manufacturing facilities, employees work across distinct <b>production lines</b> and <b>rotating shifts</b>. Traditional attendance methods (paper logs, RFID cards, or shared fingerprint scanners) are prone to buddy-punching, queue bottlenecks, and workers checking in at the wrong production line or outside assigned schedules.</p>
+      <p><b>The Solution:</b><br>
+      <b>FaceTime Attendance System</b> automates real-time attendance through camera kiosks using edge <b>ESP32-CAM</b> devices connected to a local facial recognition service and central HRMS backend. Every check-in and check-out verifies not just <i>who</i> the person is, but also <i>whether they are scanning at their assigned production line and within an active shift</i>—calculating exact working duration upon check-out.</p>
       <p><b>Key Capabilities:</b></p>
       <ul>
-        <li><b>Edge Biometrics:</b> Fast, contactless face recognition using ESP32-CAM & OpenCV LBPH.</li>
-        <li><b>Dual Guardrails:</b> Enforces strict <b>Production Line Isolation</b> & <b>Shift Window Validation</b>.</li>
-        <li><b>Real-Time Sync:</b> Pushes live check-in/out events to mobile dashboards via <b>SignalR</b>.</li>
-        <li><b>Automated Audit:</b> Calculates net working duration upon check-out automatically.</li>
+        <li><b>Biometric Verification at Edge:</b> Low-cost, contactless facial recognition powered by ESP32-CAM and OpenCV LBPH.</li>
+        <li><b>Context-Aware Guardrails:</b> Enforces dual validation—<b>Production Line Isolation</b> (must scan at the assigned terminal) and <b>Shift Window Validation</b> (must have an active shift scheduled).</li>
+        <li><b>Real-Time Observability:</b> Instant attendance state synchronization and live notifications pushed to mobile dashboards via <b>SignalR WebSockets</b>.</li>
+        <li><b>Automated Payroll Metrics:</b> Tracks exact check-in/check-out timestamps and computes net working duration automatically.</li>
       </ul>
     </td>
-    <td width="38%" align="center" valign="middle">
-      <img width="320" alt="ESP32-CAM Hardware Terminal" src="https://github.com/user-attachments/assets/601a3504-40bf-4df3-88c9-16ac18895d79" />
-      <br>
-      <sub><b>ESP32-CAM Edge Kiosk Terminal</b><br><i>Production Line Scanning Unit</i></sub>
+    <td width="40%" align="center" valign="middle">
+      <img width="350" alt="ESP32-CAM Hardware Terminal" src="https://github.com/user-attachments/assets/601a3504-40bf-4df3-88c9-16ac18895d79" />
+      <br><br>
+      <sub><b>ESP32-CAM Edge Kiosk Terminal</b><br><i>Contactless Production Line Scanning Unit</i></sub>
     </td>
   </tr>
 </table>
@@ -48,7 +50,7 @@
 
 ---
 
-## 🛠 Tech Stack Breakdown
+## Tech Stack Breakdown
 
 | Layer | Technology | Primary Responsibility |
 | :--- | :--- | :--- |
@@ -60,16 +62,20 @@
 
 ---
 
-## 🎬 System Demos
+## System Demos
 
 ### Core Workflows
 
 <details open>
 <summary><b>1. Employee Account Registration & Face Enrollment</b></summary>
-<br>
 
-> [!NOTE]
-> **Scenario:** HR Manager creates a new employee profile and captures multi-angle facial samples to train the **OpenCV LBPH** recognition model in real time.
+<table>
+  <tr>
+    <td>
+      <b>Workflow Overview:</b> HR Manager creates a new employee profile and captures multi-angle facial samples to train the <b>OpenCV LBPH</b> recognition model in real time.
+    </td>
+  </tr>
+</table>
 
 https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
 
@@ -77,10 +83,14 @@ https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
 
 <details>
 <summary><b>2. Shift Creation & Assignment</b></summary>
-<br>
 
-> [!NOTE]
-> **Scenario:** Operations Manager configures a work shift schedule with specific production line constraints and assigns it to the newly registered employee.
+<table>
+  <tr>
+    <td>
+      <b>Workflow Overview:</b> Operations Manager configures a work shift schedule with specific production line constraints and assigns it to the newly registered employee.
+    </td>
+  </tr>
+</table>
 
 https://github.com/user-attachments/assets/5185ddd1-c853-43e1-821e-da2b7d0d39b6
 
@@ -88,10 +98,14 @@ https://github.com/user-attachments/assets/5185ddd1-c853-43e1-821e-da2b7d0d39b6
 
 <details open>
 <summary><b>3. Happy Path — Face Check-In, Check-Out & Working Duration</b></summary>
-<br>
 
-> [!TIP]
-> **Scenario:** Employee scans their face at the assigned **ESP32-CAM** terminal to check in, then checks out at the end of the shift to receive instant working duration feedback via **SignalR**.
+<table>
+  <tr>
+    <td>
+      <b>Expected Behavior:</b> Employee scans their face at the assigned <b>ESP32-CAM</b> terminal to check in, then checks out at the end of the shift to receive instant working duration feedback via <b>SignalR</b>.
+    </td>
+  </tr>
+</table>
 
 https://github.com/user-attachments/assets/6dcb5812-170f-4c4b-8d69-1599643b9dbd
 
@@ -101,10 +115,14 @@ https://github.com/user-attachments/assets/6dcb5812-170f-4c4b-8d69-1599643b9dbd
 
 <details>
 <summary><b>4. Unhappy Case 1 — Wrong Production Line Rejection</b></summary>
-<br>
 
-> [!WARNING]
-> **Guardrail Triggered:** Employee attempts to check in at an IoT camera terminal assigned to a **different production line**; the system rejects the scan with a zone mismatch alert.
+<table>
+  <tr>
+    <td>
+      <b>Validation Rule:</b> Employee attempts to check in at an IoT camera terminal assigned to a <b>different production line</b>; the system rejects the scan with a zone mismatch alert.
+    </td>
+  </tr>
+</table>
 
 https://github.com/user-attachments/assets/68dce3a3-ba6f-433f-b1c5-bdf3f61e739a
 
@@ -112,10 +130,14 @@ https://github.com/user-attachments/assets/68dce3a3-ba6f-433f-b1c5-bdf3f61e739a
 
 <details>
 <summary><b>5. Unhappy Case 2 — Unscheduled Access (No Shift Assigned Today)</b></summary>
-<br>
 
-> [!CAUTION]
-> **Guardrail Triggered:** Employee scans their face on a day with **no assigned work shift**; the system blocks attendance logging outside authorized schedules.
+<table>
+  <tr>
+    <td>
+      <b>Validation Rule:</b> Employee scans their face on a day with <b>no assigned work shift</b>; the system blocks attendance logging outside authorized schedules.
+    </td>
+  </tr>
+</table>
 
 https://github.com/user-attachments/assets/77bcfb08-d1e3-4ab6-8cc0-520dd2279feb
 
@@ -123,7 +145,7 @@ https://github.com/user-attachments/assets/77bcfb08-d1e3-4ab6-8cc0-520dd2279feb
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 FaceTime_Attendance_System/
