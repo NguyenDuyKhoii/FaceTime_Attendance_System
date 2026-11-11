@@ -35,9 +35,6 @@ Create an employee account/profile and enroll facial training samples into the A
 
 https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
 
-
-[Watch clip (`demo/register_employee_and_face.mp4`)](demo/register_employee_and_face.mp4)
-
 ### 2. Shift Creation & Assignment
 Create a work shift schedule and assign it to the newly registered employee.
 
