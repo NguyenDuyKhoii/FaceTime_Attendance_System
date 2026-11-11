@@ -19,37 +19,38 @@
 
 ---
 
-## 📖 Overview & Context
+## 📖 Overview & Hardware Prototype
 
-### The Problem
-In factories and manufacturing facilities, employees work across distinct **production lines** and **rotating shifts**. Traditional attendance methods (paper logs, RFID cards, or shared fingerprint scanners) are prone to buddy-punching, queue bottlenecks, and workers checking in at the wrong production line or outside assigned schedules.
-
-### The Solution
-**FaceTime Attendance System** automates real-time attendance through camera kiosks using edge **ESP32-CAM** devices connected to a local facial recognition service and central HRMS backend. Every check-in and check-out verifies not just *who* the person is, but also *whether they are scanning at their assigned production line and within an active shift*—calculating exact working duration upon check-out.
-
-### Key Capabilities
-* **Biometric Verification at Edge:** Low-cost, contactless facial recognition powered by ESP32-CAM and OpenCV LBPH.
-* **Context-Aware Attendance Guardrails:** Enforces dual validation—**Production Line Isolation** (must scan at the assigned terminal) and **Shift Window Validation** (must have an active shift scheduled).
-* **Real-Time Observability:** Instant attendance state synchronization and live notifications pushed to mobile dashboards via **SignalR WebSockets**.
-* **Automated Payroll Metrics:** Tracks exact check-in/check-out timestamps and computes net working duration automatically.
+<table>
+  <tr>
+    <td width="65%" valign="top">
+      <h3>The Problem</h3>
+      <p>In factories and manufacturing facilities, employees work across distinct <b>production lines</b> and <b>rotating shifts</b>. Traditional attendance methods (paper logs, RFID cards, or shared fingerprint scanners) are prone to buddy-punching, queue bottlenecks, and workers checking in at the wrong production line or outside assigned schedules.</p>
+      <h3>The Solution</h3>
+      <p><b>FaceTime Attendance System</b> automates real-time attendance through camera kiosks using edge <b>ESP32-CAM</b> devices connected to a local facial recognition service and central HRMS backend. Every check-in and check-out verifies not just <i>who</i> the person is, but also <i>whether they are scanning at their assigned production line and within an active shift</i>—calculating exact working duration upon check-out.</p>
+      <h3>Key Capabilities</h3>
+      <ul>
+        <li><b>Biometric Verification at Edge:</b> Low-cost, contactless facial recognition powered by ESP32-CAM and OpenCV LBPH.</li>
+        <li><b>Context-Aware Attendance Guardrails:</b> Enforces dual validation—<b>Production Line Isolation</b> and <b>Shift Window Validation</b>.</li>
+        <li><b>Real-Time Observability:</b> Instant attendance state synchronization and live notifications pushed to mobile dashboards via <b>SignalR WebSockets</b>.</li>
+        <li><b>Automated Payroll Metrics:</b> Tracks exact check-in/check-out timestamps and computes net working duration automatically.</li>
+      </ul>
+    </td>
+    <td width="35%" align="center" valign="middle">
+      <img width="280" alt="ESP32-CAM Hardware Terminal" src="https://github.com/user-attachments/assets/10dc6242-9838-4013-98e5-ea1b25a5d667" />
+      <br>
+      <sub><b>ESP32-CAM Edge Kiosk Terminal</b><br><i>Production Line Scanning Unit</i></sub>
+    </td>
+  </tr>
+</table>
 
 ### Target Users
-* **Factory Employees:** Quick, hands-free face check-in and check-out with instant visual confirmation and worked-hours feedback.
-* **HR & Operations Managers:** Manage employee profiles, facial enrollment, production lines, IoT camera terminals, shift assignments, and live attendance logs from a unified mobile dashboard.
+- **Factory Employees:** Quick, hands-free face check-in and check-out with instant visual confirmation and worked-hours feedback.
+- **HR & Operations Managers:** Manage employee profiles, facial enrollment, production lines, IoT camera terminals, shift assignments, and live attendance logs from a unified mobile dashboard.
 
 ---
 
-## 🏗 System Architecture & Data Flow
-
-```mermaid
-flowchart LR
-    ESP[ESP32-CAM Terminal] -->|1. Capture & Stream Frame| AI[Python FastAPI<br/>OpenCV LBPH]
-    AI -->|2. Recognized FaceId + Confidence| BE[.NET 8 Web API<br/>Business Logic]
-    BE -->|3. Validate Shift & Line Rules| DB[(SQL Server)]
-    BE -->|4. Push Real-Time State via SignalR| APP[React Native Expo<br/>Mobile Dashboard]
-```
-
-### Tech Stack Breakdown
+## 🛠 Tech Stack Breakdown
 
 | Layer | Technology | Primary Responsibility |
 | :--- | :--- | :--- |
@@ -68,9 +69,9 @@ flowchart LR
 <details open>
 <summary><b>1. Employee Account Registration & Face Enrollment</b></summary>
 <br>
-<blockquote>
-Create an employee account/profile and enroll facial training samples into the AI recognition model.
-</blockquote>
+
+> [!NOTE]
+> **Scenario:** HR Manager creates a new employee profile and captures multi-angle facial samples to train the **OpenCV LBPH** recognition model in real time.
 
 https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
 
@@ -79,9 +80,9 @@ https://github.com/user-attachments/assets/74af9e9d-6b2d-4d39-bb48-53c472403dcd
 <details>
 <summary><b>2. Shift Creation & Assignment</b></summary>
 <br>
-<blockquote>
-Create a work shift schedule and assign it to the newly registered employee.
-</blockquote>
+
+> [!NOTE]
+> **Scenario:** Operations Manager configures a work shift schedule with specific production line constraints and assigns it to the newly registered employee.
 
 https://github.com/user-attachments/assets/5185ddd1-c853-43e1-821e-da2b7d0d39b6
 
@@ -90,9 +91,9 @@ https://github.com/user-attachments/assets/5185ddd1-c853-43e1-821e-da2b7d0d39b6
 <details open>
 <summary><b>3. Happy Path — Face Check-In, Check-Out & Working Duration</b></summary>
 <br>
-<blockquote>
-Employee completes face check-in via ESP32-CAM, then checks out to receive the calculated total working duration.
-</blockquote>
+
+> [!TIP]
+> **Scenario:** Employee scans their face at the assigned **ESP32-CAM** terminal to check in, then checks out at the end of the shift to receive instant working duration feedback via **SignalR**.
 
 https://github.com/user-attachments/assets/6dcb5812-170f-4c4b-8d69-1599643b9dbd
 
@@ -103,9 +104,9 @@ https://github.com/user-attachments/assets/6dcb5812-170f-4c4b-8d69-1599643b9dbd
 <details>
 <summary><b>4. Unhappy Case 1 — Wrong Production Line Rejection</b></summary>
 <br>
-<blockquote>
-Employee attempts to check in at an IoT camera assigned to a different production line; the system rejects the scan with a mismatch notice.
-</blockquote>
+
+> [!WARNING]
+> **Guardrail Triggered:** Employee attempts to check in at an IoT camera terminal assigned to a **different production line**; the system rejects the scan with a zone mismatch alert.
 
 https://github.com/user-attachments/assets/68dce3a3-ba6f-433f-b1c5-bdf3f61e739a
 
@@ -114,9 +115,9 @@ https://github.com/user-attachments/assets/68dce3a3-ba6f-433f-b1c5-bdf3f61e739a
 <details>
 <summary><b>5. Unhappy Case 2 — Unscheduled Access (No Shift Assigned Today)</b></summary>
 <br>
-<blockquote>
-Employee scans their face on a day with no assigned work shift; the system blocks attendance outside valid schedules.
-</blockquote>
+
+> [!CAUTION]
+> **Guardrail Triggered:** Employee scans their face on a day with **no assigned work shift**; the system blocks attendance logging outside authorized schedules.
 
 https://github.com/user-attachments/assets/77bcfb08-d1e3-4ab6-8cc0-520dd2279feb
 
